@@ -3,7 +3,7 @@ import Hero from '../components/Hero.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 // Reemplaza únicamente este texto por la URL de tu video de YouTube.
-const presentationVideoUrl = 'PEGAR_AQUI_URL_DE_YOUTUBE';
+const presentationVideoUrl = 'https://youtu.be/wyjW2f3q45Q';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 const getEmbedUrl = (url: string) => {
 	if (!url || url === 'PEGAR_AQUI_URL_DE_YOUTUBE') return null;
