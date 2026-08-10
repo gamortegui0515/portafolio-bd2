@@ -1,21 +1,13 @@
 ---
+import { getCollection } from 'astro:content';
+import ContactCTA from '../components/ContactCTA.astro';
+import Grid from '../components/Grid.astro';
 import Hero from '../components/Hero.astro';
+import PortfolioPreview from '../components/PortfolioPreview.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
-const sections = ['Lecturas', 'Trabajos', 'Investigaciones', 'Entregas', 'Proyectos'];
+
+const projects = (await getCollection('work')).sort((a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf());
 ---
-
-<BaseLayout title="Contenido | Bases de Datos II" description="Contenido académico de Bases de Datos II">
-	<main class="wrapper stack gap-8 content-page">
-		<Hero title="Contenido del semestre" tagline="Un espacio central para consultar el material y los avances de Bases de Datos II." align="start" />
-		<div class="content-grid">{sections.map((section) => <a href={`${base}evidencias/`}><h2>{section}</h2><p>Preparado para registrar contenido durante el semestre.</p></a>)}</div>
-	</main>
+<BaseLayout title="Contenido | Bases de Datos II" description="Trabajos y proyectos de Bases de Datos II">
+	<div class="stack gap-20"><main class="wrapper stack gap-8"><Hero title="Contenido del semestre" tagline="Trabajos, proyectos y material académico desarrollados durante Bases de Datos II." align="start" /><Grid variant="offset">{projects.map((project) => <li><PortfolioPreview project={project} /></li>)}</Grid></main><ContactCTA /></div>
 </BaseLayout>
-
-<style>
-	.content-page { padding-bottom: 7rem; }
-	.content-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; }
-	.content-grid a { min-height: 11rem; padding: 1.5rem; color: var(--gray-200); text-decoration: none; border: 1px solid var(--gray-800); border-radius: 1.25rem; background: var(--gradient-subtle); box-shadow: var(--shadow-sm); transition: transform var(--theme-transition), box-shadow var(--theme-transition); }
-	.content-grid a:hover, .content-grid a:focus { transform: translateY(-.25rem); box-shadow: var(--shadow-md); }
-	.content-grid h2 { font-size: var(--text-xl); } .content-grid p { margin-top: .75rem; color: var(--gray-300); }
-</style>
