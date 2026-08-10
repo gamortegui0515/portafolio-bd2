@@ -1,12 +1,13 @@
 ---
 import CallToAction from './CallToAction.astro';
 import Icon from './Icon.astro';
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <aside>
-	<h2>Interested in working together?</h2>
-	<CallToAction href="mailto:me@example.com">
-		Send Me a Message
+	<h2>¿Listo para explorar el proceso de aprendizaje?</h2>
+<CallToAction href={`${base}evidencias/`}>
+		Ver evidencias
 		<Icon icon="paper-plane-tilt" size="1.2em" />
 	</CallToAction>
 </aside>

@@ -1,0 +1,53 @@
+---
+import Hero from '../components/Hero.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Reemplaza únicamente este texto por la URL de tu video de YouTube.
+const presentationVideoUrl = 'PEGAR_AQUI_URL_DE_YOUTUBE';
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const getEmbedUrl = (url: string) => {
+	if (!url || url === 'PEGAR_AQUI_URL_DE_YOUTUBE') return null;
+	try {
+		const parsed = new URL(url);
+		const id = parsed.hostname.includes('youtu.be') ? parsed.pathname.slice(1) : parsed.searchParams.get('v') ?? parsed.pathname.split('/').filter(Boolean).pop();
+		return id ? `https://www.youtube-nocookie.com/embed/${id}` : null;
+	} catch { return null; }
+};
+const embedUrl = getEmbedUrl(presentationVideoUrl);
+---
+
+<BaseLayout title="Presentación | Gabriel Amortegui">
+	<main class="wrapper stack gap-20 presentation">
+		<section class="intro">
+			<Hero title="Presentación" tagline="Gabriel Amortegui · Estudiante de Ingeniería de Sistemas">
+				<p>Estoy cursando quinto semestre y me interesa explorar cómo los datos, el software y la tecnología pueden resolver problemas reales. Este portafolio reúne mi aprendizaje en Bases de Datos II.</p>
+			</Hero>
+			<img src={`${base}assets/gabriel-amortegui.png`} width="1124" height="1404" alt="Gabriel Amortegui" />
+		</section>
+		<section class="video-section" aria-labelledby="video-title">
+			<div><p class="eyebrow">Video de presentación</p><h2 id="video-title">Conoce mi proceso académico</h2></div>
+			{embedUrl ? (
+				<div class="video-frame"><iframe src={embedUrl} title="Video de presentación de Gabriel Amortegui" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen /></div>
+			) : (
+				<div class="video-placeholder"><span>▶</span><p>Tu video aparecerá aquí.</p><small>En este archivo, reemplaza <code>PEGAR_AQUI_URL_DE_YOUTUBE</code> en la variable <code>presentationVideoUrl</code> por tu enlace de YouTube.</small></div>
+			)}
+		</section>
+	</main>
+</BaseLayout>
+
+<style>
+	.presentation { padding-block: 1rem 7rem; }
+	.intro { display: grid; align-items: center; gap: 2.5rem; }
+	.intro :global(p) { max-width: 55ch; color: var(--gray-300); font-size: var(--text-md); }
+	.intro img { width: min(100%, 22rem); justify-self: center; aspect-ratio: 4 / 5; object-fit: cover; object-position: center 12%; border-radius: 2rem; box-shadow: var(--shadow-md); }
+	.video-section { display: grid; gap: 1.5rem; }
+	.eyebrow { color: var(--accent-regular); font-family: var(--font-brand); font-size: var(--text-sm); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+	.video-section h2 { margin-top: .5rem; font-size: var(--text-3xl); }
+	.video-frame, .video-placeholder { width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--gray-800); border-radius: 1.5rem; overflow: hidden; background: var(--gradient-subtle); box-shadow: var(--shadow-md); }
+	.video-frame iframe { width: 100%; height: 100%; border: 0; }
+	.video-placeholder { display: grid; place-content: center; gap: .75rem; padding: 1.5rem; text-align: center; color: var(--gray-300); }
+	.video-placeholder span { color: var(--accent-regular); font-size: 2rem; }
+	.video-placeholder p { color: var(--gray-100); font-family: var(--font-brand); font-size: var(--text-xl); }
+	.video-placeholder small { max-width: 53ch; } code { color: var(--accent-regular); font-weight: 700; }
+	@media (min-width: 50em) { .intro { grid-template-columns: 6fr 4fr; padding-inline: 2.5rem; } .intro img { justify-self: end; border-radius: 4rem; } }
+</style>

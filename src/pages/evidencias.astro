@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const categories = [
+	['SQL', 'Consultas, modelado y ejercicios relacionales.'],
+	['PL/SQL Scripts', 'Procedimientos, funciones y automatizaciones.'],
+	['NoSQL', 'Prácticas con modelos no relacionales.'],
+	['Proyecto', 'Avances y entregables del proyecto integrador.'],
+	['Lecturas', 'Recursos analizados durante el semestre.'],
+	['Trabajos', 'Actividades individuales y colaborativas.'],
+	['Investigaciones', 'Temas de profundización tecnológica.'],
+	['Entregas', 'Documentación y productos finales.'],
+	['Proyectos', 'Soluciones desarrolladas en el curso.'],
+];
+---
+<BaseLayout title="Evidencias | Bases de Datos II">
+	<main class="wrapper evidence stack gap-8">
+		<header><p class="eyebrow">Repositorio académico</p><h1>Evidencias</h1><p>Estas categorías están listas para organizar documentos, imágenes, código, enlaces y resultados a medida que avance el semestre.</p></header>
+		<div class="evidence-grid">{categories.map(([title, description]) => <section><h2>{title}</h2><p>{description}</p><span>Próximamente</span></section>)}</div>
+	</main>
+</BaseLayout>
+<style>
+	.evidence { padding-block: 1rem 7rem; } header { max-width: 60ch; } header > p:last-child { margin-top: 1rem; color: var(--gray-300); font-size: var(--text-md); } .eyebrow { color: var(--accent-regular); font-family: var(--font-brand); font-size: var(--text-sm); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; } h1 { margin-top: .5rem; } .evidence-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; } section { min-height: 11.5rem; padding: 1.5rem; border: 1px solid var(--gray-800); border-radius: 1.25rem; background: var(--gradient-subtle); box-shadow: var(--shadow-sm); } h2 { font-size: var(--text-xl); } section p { margin-top: .75rem; color: var(--gray-300); } span { display: inline-block; margin-top: 1rem; color: var(--accent-regular); font-family: var(--font-brand); font-size: var(--text-sm); }</style>
