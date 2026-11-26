@@ -1,23 +1,132 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
 
-const categories = [
-	['SQL', 'Consultas, modelado y ejercicios relacionales.'],
-	['PL/SQL Scripts', 'Procedimientos, funciones y automatizaciones.'],
-	['NoSQL', 'Prácticas con modelos no relacionales.'],
-	['Proyecto', 'Avances y entregables del proyecto integrador.'],
-	['Lecturas', 'Recursos analizados durante el semestre.'],
-	['Trabajos', 'Actividades individuales y colaborativas.'],
-	['Investigaciones', 'Temas de profundización tecnológica.'],
-	['Entregas', 'Documentación y productos finales.'],
-	['Proyectos', 'Soluciones desarrolladas en el curso.'],
-];
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { order, sectionsData, totalCards, totalFiles, topicList, kindList } from '../data/portfolio';
+
+const baseUrl = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
+const urlFor = (path: string) => baseUrl + 'recursos/' + path.split('/').map(encodeURIComponent).join('/');
+const previewUrl = (path: string) => baseUrl + 'previews/' + path.split('/').map(encodeURIComponent).join('/') + '.html';
+const isPreviewable = (path: string) => /\.(pdf|sql|js|txt|pptx|docx|xlsx|zip)$/i.test(path);
+const isTextPreview = (path: string) => /\.(sql|js|txt)$/i.test(path);
+const previewType = (path: string) => path.toLowerCase().endsWith('.pptx') ? 'Diapositivas e imágenes' : path.toLowerCase().endsWith('.docx') ? 'Texto y tablas del documento' : path.toLowerCase().endsWith('.xlsx') ? 'Hojas de cálculo y valores' : path.toLowerCase().endsWith('.zip') ? 'Archivos y scripts incluidos' : path.toLowerCase().endsWith('.pdf') ? 'Documento PDF' : 'Texto y código';
 ---
-<BaseLayout title="Evidencias | Bases de Datos II">
-	<main class="wrapper evidence stack gap-8">
-		<header><p class="eyebrow">Repositorio académico</p><h1>Evidencias</h1><p>Estas categorías están listas para organizar documentos, imágenes, código, enlaces y resultados a medida que avance el semestre.</p></header>
-		<div class="evidence-grid">{categories.map(([title, description]) => <section><h2>{title}</h2><p>{description}</p><span>Próximamente</span></section>)}</div>
+
+<BaseLayout title="Evidencias | Bases de Datos II" description="Portafolio académico organizado por entregas, laboratorios, lecturas, prácticas y presentaciones, con recursos relacionados y vistas previas.">
+	<main class="wrapper archive">
+		<header class="intro">
+			<p class="eyebrow">BASES DE DATOS II · PORTAFOLIO ACADÉMICO</p>
+			<h1>Un semestre, conectado</h1>
+			<p>Explora las evidencias en el orden del portafolio. Cada documento tiene su propia tarjeta amplia, explicación y vista previa; solo los talleres con consigna y desarrollo relacionado se presentan juntos. Los enlaces externos aparecen en tarjetas independientes con su destino directo.</p>
+			<div class="summary-line"><span><b>{totalCards}</b> tarjetas de evidencia</span><i>·</i><span><b>{totalFiles}</b> archivos incluidos</span><i>·</i><span>Enlaces externos separados</span></div>
+		</header>
+
+		<nav class="section-nav" aria-label="Orden de secciones">
+			{sectionsData.map(({ section }, index) => <a href={`#${section.toLowerCase().replaceAll(' ', '-')}`}><span>0{index + 1}</span>{section}</a>)}
+		</nav>
+
+		<section class="filters" aria-label="Filtros del portafolio">
+			<div class="filter-search"><label for="search">Buscar por actividad, archivo o concepto</label><input id="search" type="search" placeholder="Ej. enunciado, índices, cursores…" autocomplete="off" /></div>
+			<div><label for="section-filter">Sección</label><select id="section-filter"><option value="">Todas</option>{order.map((section) => <option value={section}>{section}</option>)}</select></div>
+			<div><label for="topic-filter">Tema</label><select id="topic-filter"><option value="">Todos</option>{topicList.map((topic) => <option value={topic}>{topic}</option>)}</select></div>
+			<div><label for="kind-filter">Tipo de actividad</label><select id="kind-filter"><option value="">Todos</option>{kindList.map((kind) => <option value={kind}>{kind}</option>)}</select></div>
+			<button id="clear-filters" type="button">Limpiar</button>
+		<p id="result-count" aria-live="polite">{totalCards} tarjetas · {totalFiles} archivos</p>
+		</section>
+
+		<div class="empty-state" id="empty-state" hidden><h2>No encontramos actividades</h2><p>Prueba otra palabra o limpia alguno de los filtros para ver más resultados.</p></div>
+
+		<div class="sections">
+			{sectionsData.map(({ section, info, cards, groups }) => <details class="library-section" id={section.toLowerCase().replaceAll(' ', '-')} data-section={section}>
+				<summary class="section-summary"><span class="section-name">{section}</span><span class="section-number">{String(cards.length).padStart(2, '0')}</span><span class="section-description">{info}</span><span class="chevron" aria-hidden="true">⌄</span></summary>
+				<div class="topic-groups">{groups.map((group) => <section class="topic-group" data-topic-group={group.topic}><header class="topic-heading"><h3>{group.topic}</h3><span>{group.cards.length} {group.cards.length === 1 ? 'tarjeta' : 'tarjetas'}</span></header>
+					<div class="activity-grid">{group.cards.map((card) => {
+						const searchIndex = `${card.title} ${card.topic} ${card.kind} ${card.intro} ${card.extended ?? ''} ${card.learning.join(' ')} ${card.note} ${card.directUrl ?? ''} ${card.files.map((f) => `${f.title} ${f.path} ${f.role} ${f.description} ${f.learning} ${f.externalUrl ?? ''}`).join(' ')}`;
+						return <details class="activity-card" data-search={searchIndex} data-section={section} data-topic={card.topic} data-kind={card.kind} data-file-count={card.files.length || 1}>
+							<summary class="activity-summary"><span class="activity-topic">{card.topic}</span><span class="kind-badge">{card.kind}</span><h2>{card.title}</h2><span class="file-count">{card.files.length ? `${card.files.length} ${card.files.length === 1 ? 'documento' : 'documentos'}` : 'Enlace externo'} <span aria-hidden="true">·</span> abrir explicación <span class="plus" aria-hidden="true">＋</span></span></summary>
+							<div class="activity-body">
+								<div class="context-block"><h3>Contexto y propósito</h3><p>{card.intro}</p>{card.extended && <><h4 class="subheading">Explicación ampliada</h4><p>{card.extended}</p></>}</div>
+								<div class="learning-block"><h3>¿Qué se aprende o realiza?</h3>{card.learning.length > 1 ? <ul>{card.learning.map((point) => <li>{point}</li>)}</ul> : <p>{card.learning[0]}</p>}</div>
+								<aside class="annotation"><strong>Anotación para estudiar</strong><p>{card.note}</p></aside>
+								{card.directUrl && <div class="direct-link"><span>ENLACE DIRECTO</span><a href={card.directUrl} target="_blank" rel="noopener">{card.directUrl} ↗</a></div>}
+								{card.previewUrl && <div class="preview-shell"><div class="preview-caption"><h4>Vista previa del enlace</h4><span>El sitio externo puede limitar la inserción</span></div><div class="preview-box"><iframe src={card.previewUrl} title={`Vista previa: ${card.title}`} loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen /></div></div>}
+								{card.files.length === 1 ? <div class="single-file">
+									<div class="asset-heading"><div><p class="asset-meta">{card.files[0].path.split('.').pop()?.toUpperCase()} · {card.files[0].role}</p><h3>{card.files[0].title}</h3><p class="asset-path">{card.files[0].path.split('/').slice(1, -1).join(' / ')}</p></div>{card.files[0].externalUrl && <a class="primary-link" href={card.files[0].externalUrl} target="_blank" rel="noopener">Abrir enlace directo ↗</a>}</div>
+									{card.previewUrl ? <div class="preview-shell"><div class="preview-caption"><h4>Vista previa del video</h4><span>Reproducción integrada</span></div><div class="preview-box"><iframe src={card.previewUrl} title={`Vista previa de ${card.files[0].title}`} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen /></div></div> : isPreviewable(card.files[0].path) ? <div class="preview-shell"><div class="preview-caption"><h4>Vista previa completa</h4><span>{previewType(card.files[0].path)}</span></div><div class="preview-box">{card.files[0].path.toLowerCase().endsWith('.pdf') ? <iframe src={`${urlFor(card.files[0].path)}#view=FitH`} title={`Vista previa de ${card.files[0].title}`} loading="lazy" /> : isTextPreview(card.files[0].path) ? <pre data-text-url={urlFor(card.files[0].path)}><span>Vista previa de texto y código…</span></pre> : <iframe src={previewUrl(card.files[0].path)} title={`Vista previa de ${card.files[0].title}`} loading="lazy" />}</div></div> : <p class="preview-unavailable">Este formato no tiene vista previa integrada en el navegador. El archivo original sigue disponible en el enlace.</p>}
+										<div class="file-actions"><a href={urlFor(card.files[0].path)} target="_blank" rel="noopener">Abrir archivo original ↗</a></div>
+								</div> : card.files.length > 1 ? <div class="related-files"><div class="file-list-heading"><h3>Documentos del taller</h3><span>{card.files.length} archivos relacionados</span></div>
+									{card.files.map((file) => <details class="file-item"><summary><span class="file-symbol">{file.path.split('.').pop()?.toUpperCase()}</span><span class="file-name">{file.title}</span><span class="file-role">{file.role}</span><span class="file-chevron">⌄</span></summary><div class="file-content"><h4>Descripción del documento</h4><p>{file.description}</p>{file.learning && <><h4>Qué aporta</h4><p class="file-learning">{file.learning}</p></>}{isPreviewable(file.path) ? <div class="preview-shell"><div class="preview-caption"><h4>Vista previa completa</h4><span>{previewType(file.path)}</span></div><div class="preview-box">{file.path.toLowerCase().endsWith('.pdf') ? <iframe src={`${urlFor(file.path)}#view=FitH`} title={`Vista previa de ${file.title}`} loading="lazy" /> : isTextPreview(file.path) ? <pre data-text-url={urlFor(file.path)}><span>Vista previa de texto y código…</span></pre> : <iframe src={previewUrl(file.path)} title={`Vista previa de ${file.title}`} loading="lazy" />}</div></div> : <p class="preview-unavailable">Este formato no tiene vista previa integrada; abre el archivo original para consultar todas sus páginas.</p>}<div class="file-actions"><a href={urlFor(file.path)} target="_blank" rel="noopener">Abrir archivo original ↗</a>{file.externalUrl && <a href={file.externalUrl} target="_blank" rel="noopener">Abrir enlace directo ↗</a>}</div></div></details>)}
+								</div> : null}
+							</div>
+						</details>;
+					})}</div>
+				</section>)}</div>
+			</details>)}
+		</div>
+		<footer class="closing-note">PDF, presentaciones, documentos, hojas de cálculo, archivos comprimidos y texto/código cuentan con una vista previa dentro de la ficha. El archivo original permanece disponible para consulta.</footer>
 	</main>
+
+	<script>
+		const search = document.querySelector<HTMLInputElement>('#search')!;
+		const sectionSelect = document.querySelector<HTMLSelectElement>('#section-filter')!;
+		const topicSelect = document.querySelector<HTMLSelectElement>('#topic-filter')!;
+		const kindSelect = document.querySelector<HTMLSelectElement>('#kind-filter')!;
+		const clearButton = document.querySelector<HTMLButtonElement>('#clear-filters')!;
+		const cards = [...document.querySelectorAll<HTMLDetailsElement>('.activity-card')];
+		const sections = [...document.querySelectorAll<HTMLDetailsElement>('.library-section')];
+		const topicGroups = [...document.querySelectorAll<HTMLElement>('.topic-group')];
+		const resultCount = document.querySelector<HTMLElement>('#result-count')!;
+		const emptyState = document.querySelector<HTMLElement>('#empty-state')!;
+		const loadedText = new Set<string>();
+		const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+		const initialTopics = [...topicSelect.options].slice(1).map((option) => ({ value: option.value, label: option.textContent ?? option.value }));
+		const updateTopics = () => {
+			const current = topicSelect.value;
+			const relevant = cards.filter((card) => !sectionSelect.value || card.dataset.section === sectionSelect.value);
+			const values = new Set(relevant.map((card) => card.dataset.topic));
+			topicSelect.replaceChildren(new Option('Todos', ''), ...initialTopics.filter((topic) => values.has(topic.value)).map((topic) => new Option(topic.label, topic.value)));
+			if ([...topicSelect.options].some((option) => option.value === current)) topicSelect.value = current;
+		};
+		const applyFilters = () => {
+			const terms = normalize(search.value).split(/\s+/).filter(Boolean);
+			let activityCount = 0; let fileCount = 0;
+			cards.forEach((card) => {
+				const text = normalize(card.dataset.search ?? '');
+				const matches = terms.every((term) => text.includes(term)) && (!sectionSelect.value || card.dataset.section === sectionSelect.value) && (!topicSelect.value || card.dataset.topic === topicSelect.value) && (!kindSelect.value || card.dataset.kind === kindSelect.value);
+				card.hidden = !matches;
+				if (matches) { activityCount++; fileCount += Number(card.dataset.fileCount ?? 0); }
+			});
+			topicGroups.forEach((group) => group.hidden = !group.querySelector('.activity-card:not([hidden])'));
+			const filtering = !!(terms.length || sectionSelect.value || topicSelect.value || kindSelect.value);
+			sections.forEach((section) => { const hasMatch = !!section.querySelector('.activity-card:not([hidden])'); section.hidden = !hasMatch; if (filtering) section.open = hasMatch; });
+			emptyState.hidden = activityCount > 0;
+			resultCount.textContent = `${activityCount} ${activityCount === 1 ? 'actividad' : 'actividades'} · ${fileCount} ${fileCount === 1 ? 'archivo' : 'archivos'}`;
+		};
+		const loadTextPreview = async (row: HTMLDetailsElement) => {
+			const pre = row.querySelector<HTMLPreElement>('[data-text-url]'); const url = pre?.dataset.textUrl;
+			if (!pre || !url || loadedText.has(url)) return;
+			loadedText.add(url);
+			try { const response = await fetch(url); if (!response.ok) throw new Error('No disponible'); const text = await response.text(); pre.textContent = text.length > 24000 ? `${text.slice(0, 24000)}\n\n…Vista previa recortada; abre el archivo original para consultar el contenido completo.` : text; }
+			catch { pre.textContent = 'No se pudo cargar la vista previa. Abre el archivo original para consultarlo.'; }
+		};
+		cards.forEach((card) => card.addEventListener('toggle', () => { if (card.open) { loadTextPreview(card); card.querySelectorAll<HTMLDetailsElement>('.file-item[open]').forEach(loadTextPreview); } }));
+		document.querySelectorAll<HTMLDetailsElement>('.file-item').forEach((row) => row.addEventListener('toggle', () => { if (row.open) loadTextPreview(row); }));
+		search.addEventListener('input', applyFilters);
+		sectionSelect.addEventListener('change', () => { updateTopics(); applyFilters(); });
+		topicSelect.addEventListener('change', applyFilters); kindSelect.addEventListener('change', applyFilters);
+		clearButton.addEventListener('click', () => { search.value = ''; sectionSelect.value = ''; kindSelect.value = ''; updateTopics(); topicSelect.value = ''; applyFilters(); search.focus(); });
+	document.querySelectorAll<HTMLAnchorElement>('.section-nav a').forEach((link) => link.addEventListener('click', (event) => {
+		event.preventDefault();
+		const target = document.getElementById(link.getAttribute('href')!.slice(1)) as HTMLDetailsElement | null;
+		if (target) { target.open = true; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.replaceState(null, '', link.hash); }
+	}));
+	</script>
 </BaseLayout>
+
 <style>
-	.evidence { padding-block: 1rem 7rem; } header { max-width: 60ch; } header > p:last-child { margin-top: 1rem; color: var(--gray-300); font-size: var(--text-md); } .eyebrow { color: var(--accent-regular); font-family: var(--font-brand); font-size: var(--text-sm); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; } h1 { margin-top: .5rem; } .evidence-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; } section { min-height: 11.5rem; padding: 1.5rem; border: 1px solid var(--gray-800); border-radius: 1.25rem; background: var(--gradient-subtle); box-shadow: var(--shadow-sm); } h2 { font-size: var(--text-xl); } section p { margin-top: .75rem; color: var(--gray-300); } span { display: inline-block; margin-top: 1rem; color: var(--accent-regular); font-family: var(--font-brand); font-size: var(--text-sm); }</style>
+	.archive{max-width:76rem;padding-block:1.5rem 5rem}.intro{max-width:62rem;padding:1rem 0 1.6rem}.eyebrow{font-size:.7rem;font-weight:750;letter-spacing:.14em;color:var(--accent-regular)}.intro h1{margin:.65rem 0 .9rem;font-size:clamp(2.5rem,7vw,4.4rem);line-height:1.02;letter-spacing:-.05em}.intro>p:not(.eyebrow){max-width:68ch;color:var(--gray-300);font-size:1.03rem;line-height:1.75}.summary-line{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;margin-top:1rem;color:var(--gray-400);font-size:.82rem}.summary-line b{color:var(--gray-200)}.summary-line i{font-style:normal;color:var(--gray-600)}.section-nav{display:flex;gap:.45rem;overflow:auto;margin:.5rem 0 1.2rem;padding-bottom:.3rem}.section-nav a{display:flex;flex:0 0 auto;align-items:center;gap:.45rem;padding:.6rem .75rem;border:1px solid var(--gray-800);border-radius:99px;color:var(--gray-300);font-size:.78rem;text-decoration:none;white-space:nowrap}.section-nav a:hover{border-color:var(--accent-regular);color:var(--gray-100)}.section-nav a span{color:var(--accent-regular);font-size:.68rem;font-weight:800}.filters{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;padding:1rem;border:1px solid var(--gray-800);border-radius:.9rem;background:var(--gray-999)}.filters>div{display:grid;gap:.35rem}.filter-search{grid-column:1/-1}.filters label{color:var(--gray-400);font-size:.73rem;font-weight:650}.filters input,.filters select{width:100%;min-width:0;padding:.7rem .75rem;border:1px solid var(--gray-800);border-radius:.55rem;background:var(--gray-999);color:var(--gray-100);font:inherit;font-size:.85rem}.filters input:focus,.filters select:focus{outline:2px solid var(--accent-regular);outline-offset:1px}.filters button{align-self:end;padding:.68rem .8rem;border:1px solid var(--gray-700);border-radius:.55rem;background:transparent;color:var(--gray-300);font:inherit;font-size:.82rem;cursor:pointer}.filters button:hover{border-color:var(--accent-regular);color:var(--gray-100)}.filters>p{grid-column:1/-1;color:var(--gray-400);font-size:.75rem;text-align:right}.sections{display:grid;gap:.65rem;margin-top:1rem}.library-section{border:1px solid var(--gray-800);border-radius:.85rem;background:var(--gray-999);overflow:hidden;scroll-margin-top:1rem}.library-section[hidden],.activity-card[hidden]{display:none}.section-summary{display:grid;grid-template-columns:1fr auto auto;gap:.3rem .8rem;align-items:center;padding:1rem;cursor:pointer;list-style:none}.section-summary::-webkit-details-marker,.activity-summary::-webkit-details-marker,.file-item>summary::-webkit-details-marker{display:none}.section-name{color:var(--gray-100);font-family:var(--font-brand);font-size:1.1rem;font-weight:700}.section-number{color:var(--accent-regular);font-size:.75rem;font-weight:800}.section-description{grid-column:1/-1;max-width:75ch;color:var(--gray-400);font-size:.82rem;line-height:1.55}.chevron{grid-column:3;grid-row:1;color:var(--gray-500);transition:transform .18s}.library-section[open] .chevron{transform:rotate(180deg)}.activity-grid{display:grid;grid-template-columns:1fr;gap:.6rem;padding:.75rem;border-top:1px solid var(--gray-800)}.activity-card{align-self:start;border:1px solid var(--gray-800);border-radius:.72rem;background:var(--gradient-subtle);overflow:hidden}.activity-card[open]{grid-column:1/-1;border-color:var(--gray-600);box-shadow:var(--shadow-sm)}.activity-summary{display:grid;grid-template-columns:1fr auto;gap:.35rem .6rem;align-items:center;padding:.9rem;cursor:pointer;list-style:none}.activity-topic{color:var(--accent-regular);font-size:.67rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}.kind-badge{justify-self:end;padding:.27rem .48rem;border:1px solid var(--gray-800);border-radius:99px;color:var(--gray-400);font-size:.63rem}.activity-summary h2{grid-column:1/-1;color:var(--gray-100);font-size:1.05rem;line-height:1.3}.file-count{grid-column:1/-1;color:var(--gray-500);font-size:.72rem}.plus{float:right;color:var(--accent-regular);font-size:.9rem}.activity-card[open] .plus{transform:rotate(45deg)}.activity-body{display:grid;gap:1rem;padding:1rem;border-top:1px solid var(--gray-800)}.context-block h3,.learning-block h3,.file-list-heading h3{margin-bottom:.4rem;color:var(--gray-100);font-size:.92rem}.context-block p{max-width:82ch;color:var(--gray-300);font-size:.89rem;line-height:1.75}.learning-block ul{display:grid;gap:.45rem;padding-left:1.15rem;color:var(--gray-300);font-size:.85rem;line-height:1.65}.learning-block li::marker{color:var(--accent-regular)}.annotation{padding:.8rem .9rem;border-left:2px solid var(--accent-regular);background:var(--gray-900)}.annotation strong{color:var(--gray-200);font-size:.76rem}.annotation p{margin-top:.25rem;color:var(--gray-400);font-size:.82rem;line-height:1.65}.file-list{display:grid;gap:.4rem}.file-list-heading{display:flex;justify-content:space-between;align-items:center;padding-bottom:.25rem}.file-list-heading span{color:var(--gray-500);font-size:.7rem}.file-item{border:1px solid var(--gray-800);border-radius:.55rem;background:var(--gray-999);overflow:hidden}.file-item>summary{display:grid;grid-template-columns:auto 1fr auto auto;gap:.55rem;align-items:center;padding:.65rem .7rem;cursor:pointer;list-style:none}.file-symbol{min-width:2.2rem;padding:.22rem .28rem;border-radius:.3rem;background:var(--gray-900);color:var(--accent-regular);font-size:.58rem;font-weight:800;text-align:center}.file-name{color:var(--gray-200);font-size:.78rem;font-weight:650;line-height:1.4;overflow-wrap:anywhere}.file-role{color:var(--gray-500);font-size:.64rem;text-align:right}.file-chevron{color:var(--gray-500);transition:transform .18s}.file-item[open] .file-chevron{transform:rotate(180deg)}.file-content{display:grid;gap:.65rem;padding:.7rem;border-top:1px solid var(--gray-800)}.file-content>p{color:var(--gray-400);font-size:.78rem;line-height:1.6}.file-content .file-learning{color:var(--gray-300)}.preview-box iframe{display:block;width:100%;height:min(62vh,620px);min-height:350px;border:1px solid var(--gray-800);border-radius:.4rem;background:white}.preview-box pre{max-height:25rem;overflow:auto;padding:.8rem;border-radius:.4rem;background:#111720;color:#dce5f1;font:.72rem/1.55 Consolas,Monaco,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.preview-unavailable{padding:.6rem .7rem;border:1px dashed var(--gray-700);border-radius:.45rem}.file-actions{display:flex;flex-wrap:wrap;gap:.8rem;padding-top:.45rem;border-top:1px solid var(--gray-800)}.file-actions a{color:var(--accent-regular);font-size:.74rem;font-weight:700;text-decoration:none}.file-actions a:hover{text-decoration:underline}.closing-note{margin-top:1.3rem;padding-top:.9rem;border-top:1px solid var(--gray-800);color:var(--gray-500);font-size:.75rem;line-height:1.6}.empty-state{margin:1rem 0;padding:2rem;border:1px dashed var(--gray-700);border-radius:.8rem;text-align:center}.empty-state[hidden]{display:none}.empty-state h2{font-size:1.1rem}.empty-state p{margin-top:.4rem;color:var(--gray-400);font-size:.85rem}
+	@media(min-width:45em){.filters{grid-template-columns:minmax(14rem,2fr) repeat(3,minmax(9rem,1fr)) auto}.filter-search{grid-column:auto}.filters>p{grid-column:1/-1}.activity-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:1rem}.activity-card[open]{grid-column:1/-1}.section-summary{grid-template-columns:1fr auto auto;padding:1.15rem 1.3rem}.activity-body{padding:1.2rem}}
+	@media(min-width:72em){.activity-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.activity-card[open]{grid-column:1/-1}.intro{padding-top:2rem}}
+	.topic-groups{padding:0 .8rem .9rem;border-top:1px solid var(--gray-800)}.topic-group[hidden]{display:none}.topic-group+.topic-group{margin-top:1.1rem;padding-top:1.1rem;border-top:1px solid var(--gray-800)}.topic-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.9rem .2rem .2rem}.topic-heading h3{font-size:.82rem;font-weight:650;color:var(--gray-400)}.topic-heading span{font-size:.68rem;color:var(--gray-500)}.activity-grid{border:0}.activity-summary{min-height:7rem;align-content:start}.activity-card{transition:border-color .15s,background .15s}.activity-card:hover{border-color:var(--gray-600)}.activity-card[open]{background:var(--gray-999)}.activity-card[open] .activity-summary{min-height:0;border-bottom:1px solid var(--gray-800);background:var(--gradient-subtle)}.activity-body{gap:1.25rem;padding:1.2rem}.context-block,.learning-block{max-width:86ch}.learning-block>p{color:var(--gray-300);font-size:.89rem;line-height:1.8}.annotation{max-width:86ch}.single-file{display:grid;gap:.8rem;padding-top:.2rem}.asset-heading{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:1rem;padding-bottom:.6rem;border-bottom:1px solid var(--gray-800)}.asset-heading h3{margin:.2rem 0;color:var(--gray-100);font-size:1rem}.asset-meta{color:var(--accent-regular);font-size:.65rem;font-weight:750;letter-spacing:.05em;text-transform:uppercase}.asset-path{color:var(--gray-500);font-size:.7rem;overflow-wrap:anywhere}.primary-link{padding:.55rem .7rem;border-radius:.45rem;background:var(--accent-regular);color:var(--accent-text-over);font-size:.75rem;font-weight:700;text-decoration:none}.direct-link{display:grid;gap:.5rem;padding:.9rem;border:1px solid var(--gray-800);border-radius:.55rem;background:var(--gray-900)}.direct-link>span{color:var(--gray-500);font-size:.63rem;font-weight:800;letter-spacing:.1em}.direct-link>a{color:var(--accent-regular);font-size:.82rem;line-height:1.6;overflow-wrap:anywhere}.file-list-heading{margin:.1rem 0}.file-item[open]{border-color:var(--gray-600)}.file-item>summary:hover{background:var(--gray-900)}.file-content h4{margin:.15rem 0 -.4rem;color:var(--gray-300);font-size:.76rem}.file-content .preview-box{margin-top:.15rem}.preview-box iframe{height:min(75vh,720px);min-height:420px}.preview-box pre{max-height:34rem;min-height:13rem;padding:1rem;font-size:.78rem}.file-actions{padding-top:.65rem}.closing-note{max-width:80ch}
+	.subheading{margin:.8rem 0 .25rem;color:var(--gray-200);font-size:.9rem}.preview-shell{display:grid;gap:.5rem;padding:.75rem;border:1px solid var(--gray-800);border-radius:.65rem;background:var(--gray-900)}.preview-caption{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.4rem;align-items:center}.preview-caption h4{color:var(--gray-200);font-size:.78rem}.preview-caption span{color:var(--gray-500);font-size:.68rem}.preview-box iframe{height:min(78vh,760px);min-height:450px;border-color:var(--gray-700)}.file-content .preview-shell{margin-top:.3rem}.context-block>p,.learning-block>p,.annotation p,.file-content>p{font-size:.9rem;line-height:1.85}
+</style>
+

@@ -1,0 +1,119 @@
+-- ============================================================
+-- LABORATORIO: CLUSTERING FACTOR (ORACLE 19c)
+-- ============================================================
+-- Objetivo: mostrar que el clustering factor de un indice
+-- depende del orden fisico de la tabla, y que eso cambia si el
+-- optimizador usa el indice o hace un full table scan.
+-- ============================================================
+
+
+-- ============================================================
+-- PARTE 1: CREAR TABLA DESORDENADA
+-- ============================================================
+-- 'codigo' no tiene relacion con el orden fisico de insercion
+-- (se esparce con MOD) -> esperamos clustering factor ALTO.
+
+DROP TABLE clustering_demo_desordenada PURGE;
+
+CREATE TABLE clustering_demo_desordenada (
+    id       NUMBER,
+    codigo   NUMBER,
+    relleno  VARCHAR2(200)
+);
+
+INSERT INTO clustering_demo_desordenada
+SELECT LEVEL, MOD(LEVEL * 3541, 50000), RPAD('x', 200, 'x')
+FROM dual
+CONNECT BY LEVEL <= 50000;
+
+COMMIT;
+
+CREATE INDEX idx_desordenada ON clustering_demo_desordenada(codigo);
+EXEC DBMS_STATS.GATHER_TABLE_STATS(USER, 'CLUSTERING_DEMO_DESORDENADA', CASCADE => TRUE);
+
+
+-- ============================================================
+-- PARTE 2: CREAR TABLA ORDENADA (MISMOS DATOS)
+-- ============================================================
+-- Mismas filas que la anterior, pero insertadas ya ordenadas
+-- por 'codigo' -> esperamos clustering factor BAJO.
+
+DROP TABLE clustering_demo_ordenada PURGE;
+
+CREATE TABLE clustering_demo_ordenada AS
+SELECT id, codigo, relleno
+FROM clustering_demo_desordenada
+ORDER BY codigo;
+
+CREATE INDEX idx_ordenada ON clustering_demo_ordenada(codigo);
+EXEC DBMS_STATS.GATHER_TABLE_STATS(USER, 'CLUSTERING_DEMO_ORDENADA', CASCADE => TRUE);
+
+
+-- ============================================================
+-- PARTE 3: COMPARAR EL CLUSTERING FACTOR
+-- ============================================================
+
+SELECT
+    ui.table_name,
+    ui.index_name,
+    ui.clustering_factor,
+    ut.blocks   AS bloques_tabla,
+    ut.num_rows AS filas_tabla
+FROM user_indexes ui
+JOIN user_tables ut ON ui.table_name = ut.table_name
+WHERE ui.table_name IN ('CLUSTERING_DEMO_DESORDENADA', 'CLUSTERING_DEMO_ORDENADA')
+ORDER BY ui.table_name;
+
+-- >>> EVIDENCIA:
+-- IDX_DESORDENADA -> clustering_factor cercano a filas_tabla
+-- IDX_ORDENADA    -> clustering_factor cercano a bloques_tabla
+
+
+-- ============================================================
+-- PARTE 4: PLAN CON TABLA DESORDENADA
+-- ============================================================
+
+DELETE FROM PLAN_TABLE;
+COMMIT;
+
+EXPLAIN PLAN FOR
+SELECT * FROM clustering_demo_desordenada WHERE codigo BETWEEN 1 AND 600;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+-- >>> EVIDENCIA: deberia usar TABLE ACCESS FULL
+
+
+-- ============================================================
+-- PARTE 5: PLAN CON TABLA ORDENADA (MISMO RANGO)
+-- ============================================================
+
+DELETE FROM PLAN_TABLE;
+COMMIT;
+
+EXPLAIN PLAN FOR
+SELECT * FROM clustering_demo_ordenada WHERE codigo BETWEEN 1 AND 600;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+-- >>> EVIDENCIA: deberia usar INDEX RANGE SCAN + TABLE ACCESS
+-- BY INDEX ROWID, para la misma consulta que en la Parte 4
+-- eligio full scan.
+
+
+-- ============================================================
+-- RESUMEN
+-- ============================================================
+-- Parte 3: clustering factor alto (desordenada) vs bajo (ordenada).
+-- Parte 4 y 5: mismo filtro, mismo tamano de tabla, pero distinto
+-- plan -> el clustering factor cambio el costo real que el
+-- optimizador le asigna al indice.
+--
+-- Como se bajo el clustering factor: reorganizando la tabla
+-- fisicamente (CREATE TABLE ... AS SELECT ... ORDER BY codigo)
+-- para alinear el orden de disco con el orden del indice.
+-- Tambien se logra con Index-Organized Tables, table clusters,
+-- o particionamiento alineado a la columna mas consultada.
+-- Nota: solo un indice por tabla puede tener clustering factor
+-- optimo a la vez, porque el orden fisico de la tabla es unico.
+-- ============================================================

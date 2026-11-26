@@ -1,0 +1,193 @@
+TIPOS DE DATOS EN ORACLE (SQL Y PL/SQL)
+
+1. TIPOS DE TEXTO (SQL)
+
+VARCHAR2(n)
+- Almacena texto de longitud variable.
+- Es el tipo de texto recomendado por Oracle.
+- Uso: nombres, apellidos, correos, direcciones, etc.
+
+VARCHAR(n)
+- Similar a VARCHAR2.
+- Existe por compatibilidad, pero Oracle recomienda usar VARCHAR2.
+
+CHAR(n)
+- Almacena texto de longitud fija.
+- Si el texto es más corto, Oracle completa con espacios.
+- Uso: códigos, estados, sexo, país, etc.
+
+NCHAR(n)
+- Texto Unicode de longitud fija.
+- Uso: caracteres de diferentes idiomas.
+
+NVARCHAR2(n)
+- Texto Unicode de longitud variable.
+- Uso: aplicaciones multilenguaje.
+
+CLOB
+- Almacena textos muy grandes.
+- Uso: documentos, descripciones largas.
+
+NCLOB
+- Igual que CLOB, pero en formato Unicode.
+
+--------------------------------------------------
+
+2. TIPOS NUMÉRICOS
+
+NUMBER(p,s)
+- Guarda números enteros y decimales.
+- p = cantidad total de dígitos.
+- s = cantidad de decimales.
+- Es el tipo numérico principal de Oracle.
+
+FLOAT
+- Guarda números con punto flotante.
+- Menos usado que NUMBER.
+
+BINARY_FLOAT
+- Número decimal de precisión simple.
+- Más rápido, pero menos preciso.
+
+BINARY_DOUBLE
+- Número decimal de doble precisión.
+- Más preciso que BINARY_FLOAT.
+
+PLS_INTEGER (Solo PL/SQL)
+- Guarda números enteros.
+- Más rápido que NUMBER dentro de PL/SQL.
+- Uso: contadores y ciclos.
+
+BINARY_INTEGER (Solo PL/SQL)
+- Entero similar a PLS_INTEGER.
+- Tipo antiguo; hoy se prefiere PLS_INTEGER.
+
+SIMPLE_INTEGER (Solo PL/SQL)
+- Entero optimizado.
+- No permite valores NULL.
+
+--------------------------------------------------
+
+3. TIPOS DE FECHA Y HORA
+
+DATE
+- Guarda fecha y hora (hasta segundos).
+- Uso: fechas de contratación, registros, etc.
+
+TIMESTAMP
+- Guarda fecha y hora con fracciones de segundo.
+- Más preciso que DATE.
+
+TIMESTAMP WITH TIME ZONE
+- Guarda fecha y hora incluyendo la zona horaria.
+
+TIMESTAMP WITH LOCAL TIME ZONE
+- Ajusta la hora según la zona horaria de la sesión.
+
+INTERVAL YEAR TO MONTH
+- Guarda intervalos de años y meses.
+
+INTERVAL DAY TO SECOND
+- Guarda intervalos de días, horas, minutos y segundos.
+
+--------------------------------------------------
+
+4. TIPO LÓGICO (Solo PL/SQL)
+
+BOOLEAN
+- Guarda TRUE, FALSE o NULL.
+- Solo existe en PL/SQL.
+- No puede usarse como columna en una tabla SQL.
+
+--------------------------------------------------
+
+5. TIPOS BINARIOS (SQL)
+
+RAW
+- Guarda datos binarios pequeños.
+
+LONG RAW
+- Guarda datos binarios grandes.
+- Tipo antiguo, reemplazado por BLOB.
+
+BLOB
+- Guarda archivos binarios grandes.
+- Uso: imágenes, PDF, videos, archivos.
+
+BFILE
+- Referencia archivos almacenados fuera de la base de datos.
+
+--------------------------------------------------
+
+6. TIPOS COMPUESTOS (PL/SQL)
+
+%TYPE
+- Hereda el tipo de dato de una columna o variable existente.
+- Evita escribir el tipo manualmente.
+
+%ROWTYPE
+- Hereda todos los tipos de una fila completa de una tabla.
+- Guarda un registro completo.
+
+RECORD
+- Estructura personalizada con varios campos.
+- Similar a una fila creada por el programador.
+
+--------------------------------------------------
+
+7. COLECCIONES (PL/SQL)
+
+Associative Array
+- Arreglo indexado por una clave.
+- Similar a un diccionario.
+
+VARRAY
+- Arreglo con tamaño máximo definido.
+
+Nested Table
+- Colección de tamaño variable.
+- Puede crecer o disminuir dinámicamente.
+
+--------------------------------------------------
+
+8. TIPOS ESPECIALES (PL/SQL)
+
+REF CURSOR
+- Puntero a un conjunto de resultados de una consulta.
+
+XMLTYPE
+- Almacena y procesa datos XML.
+
+JSON
+- Almacena documentos JSON de forma nativa (versiones recientes de Oracle).
+
+==================================================
+
+COMPARACIÓN SQL VS PL/SQL
+
+SQL (se usan en tablas y consultas)
+- VARCHAR2
+- CHAR
+- NUMBER
+- DATE
+- TIMESTAMP
+- CLOB
+- BLOB
+- RAW
+
+PL/SQL (se usan en variables y programación)
+- BOOLEAN
+- PLS_INTEGER
+- BINARY_INTEGER
+- SIMPLE_INTEGER
+- %TYPE
+- %ROWTYPE
+- RECORD
+- VARRAY
+- Nested Table
+- Associative Array
+- REF CURSOR
+
+DIFERENCIA CLAVE:
+- Los tipos SQL almacenan información en tablas y también pueden usarse en variables PL/SQL.
+- Los tipos PL/SQL existen solo durante la ejecución de un bloque PL/SQL y sirven para programar la lógica.

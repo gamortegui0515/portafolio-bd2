@@ -1,0 +1,153 @@
+-- ============================================================
+-- LABORATORIO: FEEDBACK EN PLANES DE EJECUCION (ORACLE 19c)
+-- ============================================================
+
+-- ============================================================
+-- PARTE 1: PREPARAR EL ESCENARIO
+-- ============================================================
+
+-- 1.1 Crear la tabla de prueba
+DROP TABLE feedback_demo PURGE;
+
+CREATE TABLE feedback_demo (
+    id            NUMBER,
+    categoria     VARCHAR2(10),
+    subcategoria  VARCHAR2(10)
+);
+
+-- 1.2 Cargar 100.000 filas.
+-- Truco clave: 'categoria' y 'subcategoria' estan CORRELACIONADAS.
+-- El 99% de las filas son A/X, y solo el 1% son B/Y, y esa
+-- combinacion SIEMPRE va junta (nunca hay A/Y ni B/X).
+INSERT INTO feedback_demo
+SELECT
+    LEVEL,
+    CASE WHEN LEVEL <= 99000 THEN 'A' ELSE 'B' END,
+    CASE WHEN LEVEL <= 99000 THEN 'X' ELSE 'Y' END
+FROM dual
+CONNECT BY LEVEL <= 100000;
+
+COMMIT;
+
+-- 1.3 Generar estadisticas SIN histogramas a proposito.
+-- Esto hace que el optimizador asuma que las columnas son
+-- independientes entre si (no sabe de la correlacion).
+EXEC DBMS_STATS.GATHER_TABLE_STATS(USER, 'FEEDBACK_DEMO', METHOD_OPT => 'FOR ALL COLUMNS SIZE 1');
+
+-- >>> QUE EVIDENCIAR EN LA PARTE 1:
+-- Que la tabla se creo con 100.000 filas y que las estadisticas
+-- estan generadas pero sin histogramas (mostrar con la consulta
+-- de abajo si queres reforzarlo).
+SELECT column_name, num_distinct, histogram
+FROM user_tab_col_statistics
+WHERE table_name = 'FEEDBACK_DEMO';
+-- Deberia mostrar histogram = 'NONE' en categoria y subcategoria
+
+
+-- ============================================================
+-- PARTE 2: VER LA ESTIMACION "EN FRIO" DEL OPTIMIZADOR (ANTES)
+-- ============================================================
+
+-- 2.1 Limpiar la plan_table para no mezclar resultados viejos
+DELETE FROM PLAN_TABLE;
+COMMIT;
+
+-- 2.2 Pedirle al optimizador el plan (sin ejecutar la consulta)
+EXPLAIN PLAN FOR
+SELECT COUNT(*)
+FROM feedback_demo
+WHERE categoria = 'B' AND subcategoria = 'Y';
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+-- >>> QUE EVIDENCIAR EN LA PARTE 2:
+-- En la columna "Rows" del plan va a aparecer un valor MUY
+-- alejado de la realidad: ~25.000 filas estimadas.
+-- el optimizador calcula:
+--   selectividad(categoria='B') = 1/2 = 50%
+--   selectividad(subcategoria='Y') = 1/2 = 50%
+--   estimado = 100.000 * 0.5 * 0.5 = 25.000
+-- porque asume independencia entre columnas (sin histograma
+-- ni estadisticas extendidas no tiene forma de saber que
+-- categoria='B' y subcategoria='Y' van siempre juntas).
+
+
+-- ============================================================
+-- PARTE 3: EJECUTAR LA CONSULTA REAL Y VER EL VALOR VERDADERO
+-- ============================================================
+
+SELECT COUNT(*)
+FROM feedback_demo
+WHERE categoria = 'B' AND subcategoria = 'Y';
+
+-- >>> QUE EVIDENCIAR EN LA PARTE 3:
+-- El resultado real es 1000 filas, NO 25.000.
+-- Ese es el error de estimacion: 25x mas de lo real.
+-- Este es justo el tipo de error grande que en un motor con
+-- feedback activado dispararia una correccion automatica en
+-- la proxima ejecucion de la misma consulta.
+
+-- Repetir un par de veces para simular reuso de la consulta
+SELECT COUNT(*) FROM feedback_demo WHERE categoria = 'B' AND subcategoria = 'Y';
+SELECT COUNT(*) FROM feedback_demo WHERE categoria = 'B' AND subcategoria = 'Y';
+
+
+-- ============================================================
+-- PARTE 4: VOLVER A PEDIR EL PLAN (COMPROBAR QUE NO SE AUTOCORRIGE)
+-- ============================================================
+
+DELETE FROM PLAN_TABLE;
+COMMIT;
+
+EXPLAIN PLAN FOR
+SELECT COUNT(*)
+FROM feedback_demo
+WHERE categoria = 'B' AND subcategoria = 'Y';
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+-- >>> QUE EVIDENCIAR EN LA PARTE 4:
+-- El "Rows" estimado SIGUE dando ~25.000, a pesar de que ya
+-- ejecutamos la consulta real varias veces y el motor "vio"
+-- que el resultado real era 1000.
+-- Esto demuestra que el feedback automatico NO esta actuando.
+
+
+-- ============================================================
+-- PARTE 5: CONFIRMAR POR QUE NO SE AUTOCORRIGE (JUSTIFICACION)
+-- ============================================================
+
+-- 5.1 Intentar activar el parametro que controla el feedback
+-- automatico (SQL Plan Directives / Adaptive Statistics)
+ALTER SESSION SET OPTIMIZER_ADAPTIVE_STATISTICS = TRUE;
+-- Resultado esperado: ORA-01031 insufficient privileges
+-- (no hay permiso para modificarlo, ni siquiera a nivel sesion)
+
+-- 5.2 Confirmar la version de Oracle que estamos usando
+SELECT * FROM product_component_version;
+-- Resultado: Oracle Database 19c (19.32), donde
+-- OPTIMIZER_ADAPTIVE_STATISTICS = FALSE por defecto desde 12.2
+
+-- ============================================================
+-- PARTE 6: SIMULAR MANUALMENTE EL EFECTO DEL FEEDBACK
+-- ============================================================
+-- Ya que no podemos ver el feedback automatico "en accion",
+-- mostramos el mecanismo interno que Oracle usaria por detras:
+-- tomar una muestra real de los datos (dynamic sampling) en
+-- vez de confiar ciegamente en NUM_DISTINCT.
+
+DELETE FROM PLAN_TABLE;
+COMMIT;
+
+EXPLAIN PLAN FOR
+SELECT /*+ dynamic_sampling(feedback_demo 6) */ COUNT(*)
+FROM feedback_demo
+WHERE categoria = 'B' AND subcategoria = 'Y';
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+
+===========================================
+-- FIN DEL LABORATORIO DE FEEDBACK
+-- ============================================================

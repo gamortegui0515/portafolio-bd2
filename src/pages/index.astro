@@ -6,14 +6,12 @@ import Pill from '../components/Pill.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
-const areas = [
-	['📚', 'Lecturas', 'Apuntes, artículos y reflexiones.'],
-	['💻', 'Trabajos', 'Actividades y entregables del curso.'],
-	['📝', 'Evidencias', 'SQL, PL/SQL, NoSQL y proyecto.'],
-	['🔎', 'Investigaciones', 'Exploraciones sobre datos y tecnología.'],
-	['📄', 'Entregas', 'Documentos y avances del semestre.'],
-	['🗃️', 'Proyectos', 'Soluciones construidas durante la asignatura.'],
-];
+	const areas = [
+		['01', 'SQL avanzado', 'Planes de ejecución, optimización, índices, transacciones y concurrencia.'],
+		['02', 'PL/SQL', 'Bloques, control, cursores, funciones, procedimientos, excepciones y triggers.'],
+		['03', 'MongoDB y MQL', 'Modelado documental, consultas y ejercicios sobre casos aplicados.'],
+		['04', 'Proyecto MotoGo', 'Requerimientos, modelos, diccionario, decisiones técnicas y cierre ejecutivo.'],
+	];
 ---
 
 <BaseLayout title="Bases de Datos II | Gabriel Amortegui">
@@ -25,15 +23,15 @@ const areas = [
 						<Pill><Icon icon="code" size="1.2em" /> Ingeniería de Sistemas</Pill>
 						<Pill><Icon icon="terminal-window" size="1.2em" /> Quinto semestre</Pill>
 					</div>
-					<p class="intro">Un espacio para documentar mi avance, construir conocimiento y compartir las evidencias de mi proceso en bases de datos.</p>
-					<CallToAction href={`${base}presentacion/`}>Ver presentación <Icon icon="arrow-right" size="1.2em" /></CallToAction>
+						<p class="intro">Una bitácora comentada de Bases de Datos II: cada entrega se conecta con los conceptos, las decisiones y las prácticas que permiten diseñar y administrar bases de datos con rigor.</p>
+						<CallToAction href={`${base}evidencias/`}>Explorar evidencias <Icon icon="arrow-right" size="1.2em" /></CallToAction>
 				</Hero>
 				<img src={`${base}assets/gabriel-amortegui.png`} alt="Gabriel Amortegui" width="1124" height="1404" />
 			</header>
 
 			<section class="portfolio-note">
 				<p class="eyebrow">Sobre el portafolio</p>
-				<p>“Una recopilación de mi proceso de aprendizaje durante la asignatura Bases de Datos II, donde iré registrando las actividades, evidencias, investigaciones, trabajos y proyectos desarrollados durante el semestre.”</p>
+					<p>El archivo reúne lecturas, prácticas, laboratorios, talleres, evaluaciones y el proyecto integrador. Las descripciones explican el propósito de cada material y cómo se relaciona con los demás temas del semestre.</p>
 			</section>
 		</div>
 
@@ -41,7 +39,7 @@ const areas = [
 			<section class="areas" aria-labelledby="areas-title">
 				<header><p class="eyebrow">Organización del semestre</p><h2 id="areas-title">Contenido del portafolio</h2></header>
 				<div class="area-grid">
-					{areas.map(([emoji, title, description]) => <a href={`${base}evidencias/`} class="area-card"><span>{emoji}</span><h3>{title}</h3><p>{description}</p></a>)}
+					{areas.map(([number, title, description]) => <a href={`${base}evidencias/`} class="area-card"><span>{number}</span><h3>{title}</h3><p>{description}</p><b>Ver materiales <span aria-hidden="true">↗</span></b></a>)}
 				</div>
 			</section>
 		</main>
@@ -62,8 +60,9 @@ const areas = [
 	.area-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
 	.area-card { display: grid; gap: .5rem; min-height: 12rem; padding: 1.5rem; color: var(--gray-200); text-decoration: none; border: 1px solid var(--gray-800); border-radius: 1.25rem; background: var(--gradient-subtle); box-shadow: var(--shadow-sm); transition: transform var(--theme-transition), box-shadow var(--theme-transition); }
 	.area-card:hover, .area-card:focus { transform: translateY(-.25rem); box-shadow: var(--shadow-md); }
-	.area-card span { font-size: 1.75rem; }
+	.area-card > span { color: var(--accent-regular); font-family: var(--font-brand); font-size: 1rem; font-weight: 700; letter-spacing: .08em; }
 	.area-card h3 { font-size: var(--text-xl); }
 	.area-card p { color: var(--gray-300); }
+	.area-card b { margin-top: .5rem; font-size: .9rem; }
 	@media (min-width: 50em) { .hero { display: grid; grid-template-columns: 6fr 4fr; padding-inline: 2.5rem; gap: 3.75rem; } .hero > img { justify-self: end; border-radius: 4rem; } .areas { gap: 3rem; } }
 </style>
