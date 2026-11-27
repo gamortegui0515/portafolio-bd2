@@ -22,6 +22,13 @@
 	--accent-overlay: hsla(211, 82%, 60%, 0.28);
 	--accent-subtle-overlay: var(--accent-overlay);
 	--accent-text-over: var(--gray-999);
+	/* Portfolio accents: section colors stay subtle in light mode. */
+	--portfolio-blue: #246fbd;
+	--portfolio-teal: #147d72;
+	--portfolio-violet: #7450aa;
+	--portfolio-amber: #92620f;
+	--portfolio-rose: #aa4962;
+	--portfolio-action-text: #ffffff;
 
 	--link-color: var(--accent-regular);
 
@@ -98,6 +105,12 @@
 	--accent-overlay: hsla(211, 82%, 60%, 0.3);
 	--accent-subtle-overlay: hsla(211, 72%, 40%, 0.3);
 	--accent-text-over: var(--gray-0);
+	--portfolio-blue: #78bdff;
+	--portfolio-teal: #63d7c6;
+	--portfolio-violet: #c4a2ff;
+	--portfolio-amber: #ffd27b;
+	--portfolio-rose: #ffa0b9;
+	--portfolio-action-text: #09111a;
 
 	--link-color: var(--accent-dark);
 

@@ -4,71 +4,33 @@ import Icon from './Icon.astro';
 const currentYear = new Date().getFullYear();
 ---
 
-<footer>
-	<div class="group">
-		<p>
-			E-portafolio académico de Bases de Datos II · Ingeniería de Sistemas
-			<Icon icon="rocket-launch" size="1.2em" />
-		</p>
-		<p>&copy; {currentYear} Gabriel Amortegui</p>
+<footer class="site-footer">
+	<div class="footer-inner">
+		<div class="footer-copy">
+			<p class="footer-title"><span class="footer-mark"><Icon icon="terminal-window" size="1.2em" /></span>E-portafolio · Bases de Datos II</p>
+			<p class="footer-meta">{currentYear} · Gabriel Amortegui · Ingeniería de Sistemas</p>
+		</div>
+		<nav class="footer-contact" aria-label="Contacto">
+			<a class="github-contact" href="https://github.com/gamortegui0515" target="_blank" rel="noopener"><Icon icon="github-logo" size="1.2em" /><span>GitHub</span><b>↗</b></a>
+			<a class="email-contact" href="mailto:gamorteguih@unbosque.edu.co"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5h17v11h-17z"/><path d="m4 7 8 6 8-6"/></svg><span>gamorteguih@unbosque.edu.co</span><b>↗</b></a>
+		</nav>
 	</div>
-	<p class="socials">
-		<a href="https://github.com/gamortegui0515"> GitHub</a>
-		<a href="mailto:gamorteguih@unbosque.edu.co">gamorteguih@unbosque.edu.co</a>
-	</p>
 </footer>
+
 <style>
-	footer {
-		display: flex;
-		flex-direction: column;
-		gap: 3rem;
-		margin-top: auto;
-		padding: 3rem 2rem 3rem;
-		text-align: center;
-		color: var(--gray-400);
-		font-size: var(--text-sm);
-	}
-
-	footer a {
-		color: var(--gray-400);
-		text-decoration: 1px solid underline transparent;
-		text-underline-offset: 0.25em;
-		transition: text-decoration-color var(--theme-transition);
-	}
-
-	footer a:hover,
-	footer a:focus {
-		text-decoration-color: currentColor;
-	}
-
-	.group {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.socials {
-		display: flex;
-		justify-content: center;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
-
-	@media (min-width: 50em) {
-		footer {
-			flex-direction: row;
-			justify-content: space-between;
-			padding: 2.5rem 5rem;
-		}
-
-		.group {
-			flex-direction: row;
-			gap: 1rem;
-			flex-wrap: wrap;
-		}
-
-		.socials {
-			justify-content: flex-end;
-		}
-	}
+	.site-footer{position:relative;isolation:isolate;width:100%;margin-top:auto;padding:2rem clamp(1.25rem,5vw,5rem) 1.5rem;overflow:hidden;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--gray-900) 58%,transparent))}
+	.site-footer:before{position:absolute;z-index:-1;inset:0 0 auto;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--portfolio-blue) 60%,var(--gray-800)),color-mix(in srgb,var(--portfolio-violet) 55%,var(--gray-800)),transparent);content:""}
+	.footer-inner{display:flex;max-width:78rem;margin-inline:auto;flex-direction:column;align-items:flex-start;gap:1.4rem}
+	.footer-copy{display:grid;gap:.5rem}.footer-title{display:flex;align-items:center;gap:.55rem;color:var(--gray-200);font-family:var(--font-brand);font-size:.92rem;font-weight:700}
+	.footer-mark{display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:50%;background:color-mix(in srgb,var(--portfolio-blue) 10%,transparent);color:var(--portfolio-blue)}
+	.footer-meta{color:var(--gray-500);font-size:.73rem;line-height:1.55}
+	.footer-contact{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;align-items:center;max-width:100%}
+	.footer-contact a{display:inline-flex;align-items:center;gap:.48rem;min-width:0;padding:.35rem 0;color:var(--gray-400);font-size:.78rem;font-weight:650;text-decoration:none;transition:color .2s ease,transform .2s ease}
+	.footer-contact .github-contact{color:var(--portfolio-violet)}.footer-contact .email-contact{color:var(--portfolio-teal)}
+	.footer-contact a span{overflow-wrap:anywhere}.footer-contact a b{margin-left:.1rem;font-size:.9rem;font-weight:500;opacity:.7;transition:transform .2s ease,opacity .2s ease}
+	.footer-contact .email-contact svg{flex:0 0 1rem;width:1rem;height:1rem;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+	.footer-contact a:hover{color:var(--gray-100);transform:translateY(-1px)}.footer-contact a:hover b{transform:translate(2px,-2px);opacity:1}
+	@media(min-width:52em){.site-footer{padding-top:2.2rem;padding-bottom:2.2rem}.footer-inner{flex-direction:row;align-items:center;justify-content:space-between;gap:2rem}.footer-contact{justify-content:flex-end;gap:1.3rem 2rem}.footer-copy{max-width:25rem}}
+	@media(max-width:30em){.site-footer{padding-inline:1rem}.footer-inner{gap:1rem}.footer-contact{align-items:flex-start;flex-direction:column;gap:.25rem}.footer-contact a{font-size:.74rem}}
+	@media(prefers-reduced-motion:reduce){.footer-contact a,.footer-contact a b{transition:none}.footer-contact a:hover{transform:none}}
 </style>

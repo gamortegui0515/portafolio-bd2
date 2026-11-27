@@ -1,0 +1,142 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { detailCards } from '../../data/portfolio';
+
+export function getStaticPaths() {
+	return detailCards.map((card) => ({ params: { slug: card.slug }, props: { card } }));
+}
+
+const { card } = Astro.props;
+const reflectionText = card.reflection ?? [card.intro, card.extended, ...(card.learning ?? []), card.note].filter(Boolean).join('\n\n');
+const reflectionParts = reflectionText.split(/\n\s*\n/).filter(Boolean);
+const baseUrl = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const urlFor = (path: string) => baseUrl + 'recursos/' + path.split('/').map(encodeURIComponent).join('/');
+const assetUrl = (path: string) => baseUrl + path.split('/').map(encodeURIComponent).join('/');
+const previewUrl = (path: string) => baseUrl + 'previews/' + path.split('/').map(encodeURIComponent).join('/') + '.html';
+const isText = (path: string) => /\.(sql|js|txt)$/i.test(path);
+const isPreviewable = (path: string) => /\.(pdf|sql|js|txt|pptx|docx|xlsx|zip)$/i.test(path);
+const previewType = (path: string) => path.toLowerCase().endsWith('.pptx') ? 'Diapositivas' : path.toLowerCase().endsWith('.docx') ? 'Documento y tablas' : path.toLowerCase().endsWith('.xlsx') ? 'Hojas de cálculo' : path.toLowerCase().endsWith('.zip') ? 'Contenido del paquete' : path.toLowerCase().endsWith('.pdf') ? 'Documento PDF' : 'Texto y código';
+const fileHref = (file: any) => urlFor(file.path);
+const phaseFor = (file: any) => {
+	if (file.role?.includes('PRESENTACIÓN')) return 'Presentación de apoyo';
+	if (file.role?.toLowerCase().includes('feedback')) return 'Script de feedback';
+	if (file.role?.toLowerCase().includes('clustering')) return 'Script de clustering factor';
+	if (file.role?.includes('ENUNCIADO') && file.role?.includes('COMPLEMENTARIO')) return 'Consigna complementaria';
+	if (file.role?.includes('ENUNCIADO')) return 'Consigna principal';
+	if (file.role?.includes('modelo')) return 'Diseño del modelo';
+	if (file.role?.includes('SCRIPT') || /\.js$/i.test(file.path)) return 'Implementación';
+	if (file.role?.includes('informe')) return 'Informe y análisis';
+	if (file.role?.includes('SOLUCIÓN')) return 'Desarrollo de la solución';
+	return 'Material relacionado';
+};
+const phaseOrder: Record<string, number> = { 'Presentación de apoyo': 0, 'Consigna principal': 0, 'Consigna complementaria': 1, 'Diseño del modelo': 2, 'Script de feedback': 3, 'Script de clustering factor': 4, 'Implementación': 5, 'Desarrollo de la solución': 6, 'Informe y análisis': 7, 'Material relacionado': 8 };
+const orderedFiles = [...card.files].sort((a: any, b: any) => (phaseOrder[phaseFor(a)] ?? 9) - (phaseOrder[phaseFor(b)] ?? 9) || a.title.localeCompare(b.title, 'es'));
+const readingSequence = card.id === 'taller-mql'
+	? ['Lee el enunciado para identificar las operaciones y reglas solicitadas.', 'Compara los modelos de domicilios y monitoreo con las necesidades del caso.', 'Sigue el script MQL y relaciona cada operación con los documentos que consulta o modifica.', 'Cierra con el informe para contrastar el diseño y la implementación.']
+	: card.id === 'taller-mercaandes'
+		? ['Empieza por el enunciado principal para entender el caso y las actividades.', 'Continúa con el PDF complementario del profesor: también contiene orientaciones del enunciado.', 'Compara las instrucciones de ambos documentos antes de elaborar una solución.']
+		: card.id === 'quiz-sql-avanzado'
+			? ['Resuelve primero los puntos del enunciado por tu cuenta.', 'Revisa el script para seguir la lógica SQL implementada.', 'Contrasta el resultado con el documento de solución.']
+			: card.id === 'taller-plsql'
+				? ['Lee cada ejercicio y su desarrollo en el PDF.', 'Ubica el bloque correspondiente en el script SQL.', 'Relaciona variables, flujo de control y resultados con el comportamiento de Oracle.']
+				: card.id === 'lab-histogramas'
+					? ['Empieza por la presentación: identifica qué representa el histograma y cómo resume la distribución.', 'Sigue el script para preparar los datos y recopilar estadísticas.', 'Compara las filas estimadas, el plan y el resultado real para explicar el efecto de las estadísticas.']
+					: card.id === 'lab-feedback-clustering'
+						? ['Usa la presentación como marco para feedback y clustering factor.', 'Revisa el script de feedback y compara filas estimadas con filas reales.', 'Continúa con el script de clustering factor y contrasta los casos ordenado y desordenado.']
+						: card.id === 'lab-metodos-join'
+							? ['Revisa la presentación para distinguir nested loops, hash join y sort-merge join.', 'Relaciona cada método con las condiciones del escenario y el volumen de filas.', 'Consulta el script y compara los planes para explicar la decisión del optimizador.']
+				: null;
+---
+
+<BaseLayout title={`${card.title} | Evidencias BD II`} description={card.reflection ?? card.intro}>
+	<main class="wrapper detail-page" data-section={card.section}>
+		<a class="back-link" href={`${baseUrl}evidencias/`}>← Volver a todas las evidencias</a>
+		<header class="detail-hero">
+			<p class="eyebrow">{card.section} <span>·</span> {card.topic}</p>
+			<div class="hero-row"><div><h1>{card.title}</h1><p class="lead">{card.intro}</p></div><span class="kind-badge">{card.kind}</span></div>
+			<div class="hero-meta"><span>{card.files.length || 1} {card.files.length === 1 ? 'recurso' : 'recursos'}</span><span>Reflexión de aprendizaje</span><span>Bases de Datos II</span></div>
+		</header>
+		<section class="learning-panel">
+			<div class="section-kicker"><span>01</span><div><p class="eyebrow">LECTURA ACADÉMICA</p><h2>Contexto y propósito</h2></div></div>
+			<div class="reflection-copy">{reflectionParts.map((paragraph: string, index: number) => <article class="reflection-part"><span class="reflection-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><p>{paragraph}</p></article>)}</div>
+		</section>
+		<section class="takeaway-section">
+			<div class="section-kicker"><span>02</span><div><p class="eyebrow">CONEXIÓN CON LA MATERIA</p><h2>Aprendizajes de Bases de Datos II</h2></div></div>
+			<div class="takeaway-grid">{card.learning.map((point: string, index: number) => <article class="takeaway-card"><span class="takeaway-index">0{index + 1}</span><p>{point}</p></article>)}</div>
+		</section>
+		<section class="resources-section">
+			<div class="section-kicker"><span>03</span><div><p class="eyebrow">DOCUMENTOS Y FUENTES</p><h2>Consulta la evidencia</h2><p class="section-subtitle">Revisa el material aquí mismo o abre el original en otra pestaña.</p></div></div>
+			{readingSequence && <div class="reading-route"><div><p class="eyebrow">RECORRIDO RECOMENDADO</p><h3>Cómo se relacionan los archivos</h3></div><ol>{readingSequence.map((step: string, index: number) => <li><span>{String(index + 1).padStart(2, '0')}</span><p>{step}</p></li>)}</ol></div>}
+			<div class="resource-grid">
+				{card.directUrl && <article class="resource-card"><div class="resource-head"><span class="resource-icon">↗</span><div><p class="resource-type">ENLACE EXTERNO</p><h3>{card.title}</h3></div></div><p class="resource-description">{card.intro}</p><div class="resource-actions"><a class="open-resource" href={card.directUrl} target="_blank" rel="noopener">Abrir sitio original ↗</a></div>{card.previewUrl && <div class="preview-shell"><div class="preview-caption"><span>VISTA INTEGRADA</span><a href={card.directUrl} target="_blank" rel="noopener">Abrir aparte ↗</a></div><div class="preview-box"><iframe src={card.previewUrl} title={`Vista previa de ${card.title}`} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen /></div></div>}</article>}
+				{orderedFiles.map((file: any, index: number) => <article class="resource-card"><div class="resource-head"><span class="resource-icon">{String(index + 1).padStart(2, '0')}</span><div><p class="resource-type">{phaseFor(file)} <span>·</span> {file.path.split('.').pop()?.toUpperCase()}</p><h3>{file.title}</h3></div></div><p class="resource-description">{file.description}</p>{file.learning && <div class="file-learning"><strong>Aprendizaje relacionado</strong><p>{file.learning}</p></div>}{file.externalUrl && <a class="open-resource" href={file.externalUrl} target="_blank" rel="noopener">Abrir enlace relacionado ↗</a>}
+					{file.imagePreview ? <figure class="diagram-preview"><img src={assetUrl(file.imagePreview)} alt={file.imagePreviewAlt ?? file.title} loading="lazy"/><figcaption>Vista previa del esquema relacional HR</figcaption></figure> : isPreviewable(file.path) ? <div class="preview-shell"><div class="preview-caption"><span>VISTA PREVIA · {previewType(file.path).toUpperCase()}</span><a href={fileHref(file)} target="_blank" rel="noopener">Ampliar ↗</a></div><div class="preview-box">{file.path.toLowerCase().endsWith('.pdf') ? <iframe src={`${fileHref(file)}#view=FitH`} title={`Vista previa de ${file.title}`} loading="lazy" /> : isText(file.path) ? <pre data-text-url={urlFor(file.path)}><span>Cargando vista previa…</span></pre> : <iframe src={previewUrl(file.path)} title={`Vista previa de ${file.title}`} loading="lazy" />}</div></div> : <p class="preview-unavailable">La vista previa no está disponible en el navegador. Abre el original para consultar el contenido.</p>}
+					<a class="original-link" href={fileHref(file)} target="_blank" rel="noopener">Descargar o abrir archivo original <span>↗</span></a>
+				</article>)}
+			</div>
+		</section>
+	</main>
+	<script>
+		const loaded = new Set<string>();
+		const loadText = async (pre: HTMLPreElement) => { const url = pre.dataset.textUrl; if (!url || loaded.has(url)) return; loaded.add(url); try { const response = await fetch(url); if (!response.ok) throw new Error(); const text = await response.text(); pre.textContent = text.length > 40000 ? `${text.slice(0, 40000)}\n\n…Vista previa recortada; abre el archivo original para ver el contenido completo.` : text; } catch { pre.textContent = 'No se pudo cargar la vista previa. Abre el archivo original.'; } };
+		document.querySelectorAll<HTMLPreElement>('[data-text-url]').forEach(loadText);
+	</script>
+</BaseLayout>
+
+<style>
+	.detail-page{max-width:82rem;padding-block:1.25rem 5rem}.back-link{display:inline-flex;margin:0 0 1rem;color:var(--accent-regular);font-size:.84rem;font-weight:750;text-decoration:none}.back-link:hover{text-decoration:underline}
+	.detail-hero{position:relative;overflow:hidden;padding:clamp(1.25rem,4vw,3rem);border:1px solid var(--gray-800);border-radius:1.4rem;background:radial-gradient(ellipse at 8% 0%,color-mix(in srgb,var(--accent-regular) 18%,transparent),transparent 48%),linear-gradient(140deg,var(--gray-999),var(--gray-900))}.detail-hero:after{position:absolute;right:-3rem;bottom:-7rem;width:17rem;height:17rem;border:1px solid color-mix(in srgb,var(--accent-regular) 20%,transparent);border-radius:50%;content:"";pointer-events:none}.eyebrow{color:var(--accent-regular);font-size:.67rem;font-weight:850;letter-spacing:.13em;text-transform:uppercase}.eyebrow span{padding-inline:.3rem;color:var(--gray-500)}.hero-row{display:flex;justify-content:space-between;align-items:start;gap:1.2rem;margin-top:.85rem}.detail-hero h1{max-width:23ch;font-size:clamp(2rem,5vw,3.7rem);line-height:1.04;letter-spacing:-.045em}.lead{max-width:76ch;margin-top:1rem;color:var(--gray-300);font-size:1.03rem;line-height:1.8}.kind-badge{flex:0 0 auto;padding:.38rem .68rem;border:1px solid var(--gray-700);border-radius:99px;background:color-mix(in srgb,var(--gray-900) 75%,transparent);color:var(--gray-300);font-size:.7rem}.hero-meta{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.35rem}.hero-meta span{padding:.42rem .7rem;border:1px solid var(--gray-800);border-radius:99px;background:color-mix(in srgb,var(--gray-999) 70%,transparent);color:var(--gray-400);font-size:.7rem}
+	.learning-panel,.takeaway-section,.resources-section{margin-top:1.4rem}.learning-panel{padding:clamp(1.15rem,3vw,2.1rem);border:1px solid var(--gray-800);border-radius:1.1rem;background:var(--gray-999)}.section-kicker{display:flex;align-items:flex-start;gap:.8rem;margin-bottom:1rem}.section-kicker>span{display:grid;place-items:center;flex:0 0 2rem;height:2rem;border:1px solid color-mix(in srgb,var(--accent-regular) 35%,var(--gray-800));border-radius:.65rem;background:color-mix(in srgb,var(--accent-regular) 10%,var(--gray-999));color:var(--accent-regular);font-size:.75rem;font-weight:800}.section-kicker h2{margin-top:.25rem;color:var(--gray-100);font-size:clamp(1.25rem,2.6vw,1.8rem);letter-spacing:-.025em}.section-subtitle{margin-top:.4rem;color:var(--gray-400);font-size:.85rem}.reflection-copy{display:grid;gap:.9rem;max-width:88ch;padding-left:2.8rem}.reflection-copy p{color:var(--gray-300);font-size:1rem;line-height:1.9}.takeaway-grid{display:grid;gap:.65rem}.takeaway-card{display:grid;grid-template-columns:auto 1fr;gap:.75rem;align-items:start;padding:1rem;border:1px solid var(--gray-800);border-radius:.8rem;background:linear-gradient(145deg,color-mix(in srgb,var(--accent-regular) 5%,var(--gray-999)),var(--gray-999) 65%)}.takeaway-index{display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:.55rem;background:var(--gray-900);color:var(--accent-regular);font-size:.68rem;font-weight:850}.takeaway-card p{color:var(--gray-300);font-size:.9rem;line-height:1.75}
+	.study-note{display:grid;grid-template-columns:auto 1fr;gap:1rem;margin-top:1.2rem;padding:1.1rem 1.2rem;border:1px solid color-mix(in srgb,var(--accent-regular) 26%,var(--gray-800));border-radius:1rem;background:linear-gradient(110deg,color-mix(in srgb,var(--accent-regular) 9%,var(--gray-999)),var(--gray-999) 60%)}.note-icon{display:grid;place-items:center;width:2.2rem;height:2.2rem;border-radius:.7rem;background:color-mix(in srgb,var(--accent-regular) 16%,var(--gray-900));color:var(--accent-regular)}.study-note h2{margin:.25rem 0 .5rem;color:var(--gray-100);font-size:1.1rem}.study-note>div>p:last-child{max-width:90ch;color:var(--gray-300);font-size:.88rem;line-height:1.8}
+	.resources-section{padding-top:.4rem}.resource-grid{display:grid;grid-template-columns:1fr;gap:.8rem}.resource-card{display:grid;align-content:start;gap:.8rem;padding:1rem;border:1px solid var(--gray-800);border-radius:1rem;background:var(--gray-999);box-shadow:var(--shadow-sm)}.resource-head{display:grid;grid-template-columns:auto 1fr;gap:.75rem;align-items:start}.resource-icon{display:grid;place-items:center;min-width:2.1rem;height:2.1rem;padding:0 .3rem;border:1px solid var(--gray-800);border-radius:.65rem;background:var(--gray-900);color:var(--accent-regular);font-size:.68rem;font-weight:850}.resource-type{margin:.1rem 0 .3rem;color:var(--accent-regular);font-size:.63rem;font-weight:850;letter-spacing:.07em}.resource-type span{color:var(--gray-500)}.resource-card h3{color:var(--gray-100);font-size:.97rem;line-height:1.35;overflow-wrap:anywhere}.resource-description,.file-learning p{color:var(--gray-400);font-size:.82rem;line-height:1.7}.file-learning{padding:.7rem .8rem;border-left:2px solid var(--gray-700);background:var(--gray-900)}.file-learning strong{color:var(--gray-300);font-size:.72rem}.file-learning p{margin-top:.25rem;color:var(--gray-300)}.resource-actions{display:flex;gap:.5rem}.open-resource{display:inline-flex;justify-self:start;padding:.55rem .72rem;border-radius:.5rem;background:var(--accent-regular);color:var(--accent-text-over);font-size:.72rem;font-weight:800;text-decoration:none}.open-resource:hover{filter:brightness(1.08)}.original-link{display:flex;justify-content:space-between;align-items:center;padding-top:.65rem;border-top:1px solid var(--gray-800);color:var(--accent-regular);font-size:.73rem;font-weight:750;text-decoration:none}.original-link:hover{text-decoration:underline}.preview-shell{display:grid;gap:.45rem;margin-top:.1rem}.preview-caption{display:flex;justify-content:space-between;gap:.5rem;color:var(--gray-400);font-size:.62rem;font-weight:800;letter-spacing:.06em}.preview-caption a{color:var(--accent-regular);font-size:.68rem;letter-spacing:0;text-decoration:none}.preview-caption a:hover{text-decoration:underline}.preview-box iframe{display:block;width:100%;height:min(64vh,650px);min-height:330px;border:1px solid var(--gray-800);border-radius:.6rem;background:white}.preview-box pre{max-height:35rem;min-height:15rem;overflow:auto;padding:1rem;border-radius:.6rem;background:#111720;color:#dce5f1;font:.78rem/1.6 Consolas,Monaco,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.preview-unavailable{padding:.75rem;border:1px dashed var(--gray-700);border-radius:.5rem;color:var(--gray-400);font-size:.8rem;line-height:1.6}
+	@media(min-width:45em){.takeaway-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.resource-card{padding:1.15rem}}
+	@media(min-width:62em){.resource-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.detail-page{padding-top:1.8rem}.resource-card:only-child{grid-column:1/-1}}
+
+	.reading-route{display:grid;gap:1rem;margin:0 0 1rem;padding:1rem;border:1px solid var(--gray-800);border-radius:1rem;background:linear-gradient(120deg,color-mix(in srgb,var(--accent-regular) 8%,var(--gray-999)),var(--gray-999) 70%)}.reading-route h3{margin-top:.3rem;color:var(--gray-100);font-size:1.05rem}.reading-route ol{display:grid;gap:.5rem;margin:0;padding:0;list-style:none}.reading-route li{display:grid;grid-template-columns:auto 1fr;gap:.65rem;align-items:start;padding:.6rem .7rem;border:1px solid var(--gray-800);border-radius:.7rem;background:color-mix(in srgb,var(--gray-900) 70%,transparent)}.reading-route li>span{color:var(--accent-regular);font-size:.7rem;font-weight:850}.reading-route li p{color:var(--gray-300);font-size:.8rem;line-height:1.6}.resource-card{position:relative}.resource-card:before{position:absolute;inset:0 auto 0 0;width:2px;border-radius:1rem 0 0 1rem;background:color-mix(in srgb,var(--accent-regular) 40%,transparent);content:""}.resource-head h3{font-size:1rem}.resource-grid{align-items:stretch}resource-card .preview-box iframe{height:min(62vh,640px);min-height:390px}.resource-card .preview-box pre{min-height:18rem}.resource-card .open-resource{margin:.05rem 0}
+	@media(min-width:45em){.reading-route{grid-template-columns:minmax(12rem,.55fr) minmax(0,1.45fr);align-items:center;padding:1.2rem}.reading-route ol{grid-template-columns:repeat(2,minmax(0,1fr))}.resource-grid{align-items:start}}
+
+	.diagram-preview{display:grid;gap:.5rem;margin:0;padding:.65rem;border:1px solid var(--gray-800);border-radius:.75rem;background:#fff}.diagram-preview img{display:block;width:100%;height:auto;max-height:32rem;object-fit:contain}.diagram-preview figcaption{padding:.45rem .55rem;border-radius:.4rem;background:#f4f5f6;color:#394150;font-size:.7rem;font-weight:700;text-align:center}.resource-card{transition:transform .16s,border-color .16s,box-shadow .16s}.resource-card:hover{border-color:var(--gray-600);box-shadow:var(--shadow-md);transform:translateY(-2px)}.reading-route{box-shadow:var(--shadow-sm)}
+
+	.reflection-copy{padding-left:2.8rem}.reflection-part{display:grid;grid-template-columns:auto 1fr;gap:.8rem;align-items:start;padding:.9rem 0;border-top:1px solid var(--gray-800)}.reflection-part:first-child{padding-top:0;border-top:0}.reflection-index{display:grid;place-items:center;min-width:1.8rem;height:1.8rem;border:1px solid var(--gray-800);border-radius:.55rem;background:var(--gray-900);color:var(--accent-regular);font-size:.64rem;font-weight:850}.reflection-part .reflection-label{margin:0 0 .25rem;color:var(--accent-regular);font-size:.61rem;font-weight:850;letter-spacing:.09em}.reflection-part>div>p:last-child{max-width:82ch;color:var(--gray-300);font-size:.97rem;line-height:1.9}.reflection-part .reflection-label:last-child{color:var(--gray-300)}
+
+	/* Ficha adaptable y acentos suaves según la sección de origen */
+	.detail-page[data-section="Entregas"]{--section-accent:var(--portfolio-blue)}.detail-page[data-section="Laboratorios"]{--section-accent:var(--portfolio-teal)}.detail-page[data-section="Lecturas y documentación"]{--section-accent:var(--portfolio-violet)}.detail-page[data-section="Prácticas"]{--section-accent:var(--portfolio-amber)}.detail-page[data-section="Presentaciones"]{--section-accent:var(--portfolio-rose)}
+	.detail-page .back-link,.detail-page .eyebrow,.detail-page .reflection-part .reflection-label{color:var(--section-accent)}.detail-hero{background:radial-gradient(ellipse at 8% 0%,color-mix(in srgb,var(--section-accent) 16%,transparent),transparent 48%),linear-gradient(140deg,var(--gray-999),var(--gray-900))}.detail-hero:after{border-color:color-mix(in srgb,var(--section-accent) 28%,transparent)}.detail-page .section-kicker>span,.detail-page .reflection-index{border-color:color-mix(in srgb,var(--section-accent) 33%,var(--gray-800));background:color-mix(in srgb,var(--section-accent) 9%,var(--gray-999));color:var(--section-accent)}.detail-page .takeaway-card{border-color:color-mix(in srgb,var(--section-accent) 21%,var(--gray-800));background:linear-gradient(145deg,color-mix(in srgb,var(--section-accent) 7%,var(--gray-999)),var(--gray-999) 70%)}.detail-page .takeaway-index{color:var(--section-accent)}.detail-page .resource-card{min-width:0;border-color:color-mix(in srgb,var(--section-accent) 19%,var(--gray-800));box-shadow:0 5px 20px color-mix(in srgb,var(--section-accent) 6%,transparent)}.detail-page .resource-card:before{background:linear-gradient(180deg,var(--section-accent),color-mix(in srgb,var(--section-accent) 12%,transparent))}.detail-page .resource-type,.detail-page .resource-icon{color:var(--section-accent)}.detail-page .resource-icon{border-color:color-mix(in srgb,var(--section-accent) 28%,var(--gray-800))}.detail-page .original-link,.detail-page .preview-caption a{color:var(--section-accent)}.detail-page .open-resource{background:var(--section-accent);color:var(--portfolio-action-text)}.detail-page .resource-card:hover{border-color:color-mix(in srgb,var(--section-accent) 55%,var(--gray-800));box-shadow:0 0 0 1px color-mix(in srgb,var(--section-accent) 15%,transparent),0 12px 30px color-mix(in srgb,var(--section-accent) 10%,transparent)}
+	.preview-box,.preview-shell,.diagram-preview{min-width:0;max-width:100%}.preview-box iframe{min-width:0;max-width:100%}.resource-card h3,.resource-description,.file-learning,.reflection-part p{overflow-wrap:anywhere}
+	@media(max-width:50em){.detail-page{padding-top:.8rem}.detail-hero{padding:1.2rem;border-radius:1rem}.hero-row{gap:.7rem}.detail-hero h1{font-size:clamp(1.85rem,8vw,2.8rem)}.lead{font-size:.94rem;line-height:1.72}.hero-meta{gap:.35rem}.hero-meta span{font-size:.65rem;padding:.38rem .55rem}.learning-panel{padding:1rem}.reflection-copy{padding-left:0}.reflection-part{gap:.6rem}.reflection-part>div>p:last-child{font-size:.9rem;line-height:1.78}.section-kicker{gap:.6rem}.section-kicker h2{font-size:1.22rem}.resource-grid{grid-template-columns:minmax(0,1fr)}.resource-card{padding:.9rem}.preview-box iframe{height:min(68vh,560px);min-height:clamp(250px,42vh,360px)}.preview-box pre{min-height:12rem;padding:.75rem;font-size:.7rem}.diagram-preview img{max-height:24rem}}
+	@media(max-width:27em){.wrapper.detail-page{padding-inline:1rem}.back-link{font-size:.76rem}.hero-row{flex-direction:column;align-items:flex-start}.kind-badge{order:-1}.hero-meta span{white-space:normal}.section-kicker>span{flex-basis:1.75rem;height:1.75rem}.reflection-part{grid-template-columns:1.6rem 1fr;gap:.5rem}.reflection-index{min-width:1.6rem;height:1.6rem}.resource-head{grid-template-columns:1.8rem minmax(0,1fr);gap:.55rem}}
+	@media(min-width:62em){.detail-hero{box-shadow:0 18px 55px color-mix(in srgb,var(--section-accent) 8%,transparent)}.resource-card .preview-box iframe{height:min(58vh,620px)}}
+	@media(prefers-reduced-motion:reduce){.resource-card,.reading-route{transition:none!important}.resource-card:hover{transform:none}}
+	.reflection-copy{width:min(100%,92ch);max-width:none;padding-left:0;gap:0}
+	.reflection-part{grid-template-columns:2rem minmax(0,1fr);gap:clamp(.65rem,2vw,1rem);padding:clamp(.85rem,2.4vw,1.2rem) 0}
+	.reflection-part>p{min-width:0;max-width:82ch;color:var(--gray-300);font-size:clamp(.92rem,.86rem + .25vw,1rem);line-height:1.82;overflow-wrap:anywhere;hyphens:auto}
+	.reflection-index{position:static}
+	.detail-page .learning-panel{border-color:color-mix(in srgb,var(--section-accent) 20%,var(--gray-800));background:radial-gradient(ellipse at 100% 0%,color-mix(in srgb,var(--section-accent) 6%,transparent),transparent 42%),var(--gray-999)}
+	@media(max-width:27em){.reflection-part{grid-template-columns:1.65rem minmax(0,1fr);gap:.55rem}.reflection-index{min-width:1.65rem;height:1.65rem;position:static}.reflection-part>p{font-size:.92rem;line-height:1.75}}
+	/* Ficha editorial: prioriza títulos, lectura y vista previa sobre tarjetas anidadas. */
+	.detail-hero{border:0;border-radius:0;border-bottom:1px solid color-mix(in srgb,var(--section-accent) 28%,var(--gray-800));box-shadow:none;padding-inline:clamp(.2rem,3vw,1.5rem);background:radial-gradient(ellipse at 12% 0%,color-mix(in srgb,var(--section-accent) 13%,transparent),transparent 48%)}
+	.detail-hero:after{right:0;bottom:-8rem;width:13rem;height:13rem;border:0;background:radial-gradient(circle,color-mix(in srgb,var(--section-accent) 9%,transparent),transparent 68%)}
+	.detail-page .learning-panel{border:0;border-radius:0;background:transparent;padding-inline:clamp(.2rem,2vw,.8rem)}
+	.detail-page .section-kicker>span{border:0;border-radius:0;background:transparent;font-size:.8rem}
+	.reflection-part{border-top:1px solid color-mix(in srgb,var(--section-accent) 16%,var(--gray-800))}
+	.reflection-index{border:0;border-radius:0;background:transparent;font-size:.72rem}
+	.takeaway-grid{gap:.2rem 1.6rem}
+	.detail-page .takeaway-card{border:0;border-bottom:1px solid color-mix(in srgb,var(--section-accent) 18%,var(--gray-800));border-radius:0;background:transparent;padding:1rem .1rem;transition:transform .2s ease,color .2s ease}
+	.detail-page .takeaway-card:hover{transform:translateX(.18rem)}
+	.detail-page .takeaway-index{width:1.6rem;height:1.6rem;border-radius:50%;background:color-mix(in srgb,var(--section-accent) 9%,transparent)}
+	.resource-grid{gap:1rem 2rem}
+	.detail-page .resource-card{border:0;border-top:1px solid color-mix(in srgb,var(--section-accent) 26%,var(--gray-800));border-radius:0;background:transparent;box-shadow:none;padding:1rem .1rem}
+	.detail-page .resource-card:before{display:none}
+	.detail-page .resource-card:hover{border-color:var(--section-accent);box-shadow:none;transform:translateY(-1px)}
+	.resource-icon{min-width:1.6rem;height:auto;border:0;border-radius:0;background:transparent;font-size:.78rem}
+	.file-learning{border:0;border-left:2px solid var(--section-accent);background:linear-gradient(90deg,color-mix(in srgb,var(--section-accent) 6%,transparent),transparent 78%)}
+	.reading-route{border:0;border-left:2px solid var(--section-accent);border-radius:0;background:linear-gradient(90deg,color-mix(in srgb,var(--section-accent) 5%,transparent),transparent 75%);box-shadow:none;padding:1rem 1.2rem}
+	.reading-route li{border:0;border-bottom:1px solid var(--gray-800);border-radius:0;background:transparent;padding:.55rem .25rem}
+	.preview-shell{padding:0;border:0;border-radius:0;background:transparent}
+	.preview-caption{padding:.45rem .1rem;border-bottom:1px solid var(--gray-800)}
+	.preview-box iframe{border-color:color-mix(in srgb,var(--section-accent) 22%,var(--gray-800));border-radius:.5rem;box-shadow:0 12px 35px color-mix(in srgb,var(--section-accent) 7%,transparent)}
+	@media(min-width:45em){.takeaway-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+	@media(max-width:50em){.detail-hero{padding-inline:.2rem}.detail-page .learning-panel{padding-inline:.2rem}.detail-page .resource-card{padding-inline:0}.reading-route{padding-inline:.8rem}}
+	@media(prefers-reduced-motion:reduce){.detail-page .takeaway-card{transition:none}.detail-page .takeaway-card:hover{transform:none}}
+
+</style>
