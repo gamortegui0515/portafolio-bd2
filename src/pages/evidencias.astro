@@ -1,7 +1,7 @@
 ---
 
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { order, sectionsData, totalCards, totalFiles, topicList, kindList } from '../data/portfolio';
+import { order, sectionsData, totalCards, totalFiles, topicList } from '../data/portfolio';
 
 const baseUrl = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
 const urlFor = (path: string) => baseUrl + 'recursos/' + path.split('/').map(encodeURIComponent).join('/');
@@ -51,7 +51,6 @@ const subjectLabel = (value: string) => subjectOptions.find((subject) => subject
 			<div><label for="section-filter">Sección</label><select id="section-filter"><option value="">Todas</option>{order.map((section) => <option value={section}>{section}</option>)}</select></div>
 			<div><label for="subject-filter">Área de estudio</label><select id="subject-filter"><option value="">Todas las áreas</option>{subjectOptions.map((subject) => <option value={subject.value}>{subject.label}</option>)}</select></div>
 			<div><label for="topic-filter">Tema</label><select id="topic-filter"><option value="">Todos</option>{topicList.map((topic) => <option value={topic}>{topic}</option>)}</select></div>
-			<div><label for="kind-filter">Tipo de actividad</label><select id="kind-filter"><option value="">Todos</option>{kindList.map((kind) => <option value={kind}>{kind}</option>)}</select></div>
 			<button id="clear-filters" type="button">Limpiar</button>
 		<p id="result-count" aria-live="polite">{totalCards} tarjetas · {totalFiles} archivos</p>
 		</section>
@@ -61,14 +60,14 @@ const subjectLabel = (value: string) => subjectOptions.find((subject) => subject
 		<div class="sections">
 			{sectionsData.map(({ section, info, cards, groups }, sectionIndex) => <details class="library-section" id={section.toLowerCase().replaceAll(' ', '-')} data-section={section}>
 				<summary class="section-summary"><span class="section-heading"><span class="section-order">{String(sectionIndex + 1).padStart(2, '0')}</span><span class="section-name">{section}</span></span><span class="section-number">{String(cards.length).padStart(2, '0')} evidencias</span><span class="section-description">{info}</span><span class="chevron" aria-hidden="true">⌄</span></summary>
-				<div class="topic-groups">{groups.map((group, groupIndex) => <section class="topic-group" data-topic-group={group.topic}><header class="topic-heading"><span class="topic-order">GRUPO {String(groupIndex + 1).padStart(2, '0')}</span><h3>{group.topic}</h3><span class="topic-count">{String(group.cards.length).padStart(2, '0')} {group.cards.length === 1 ? 'tarjeta' : 'tarjetas'}</span></header>
-					<div class="activity-grid">{group.cards.map((card) => {
+				<div class="topic-groups">{groups.map((group, groupIndex) => <details class="topic-group" data-topic-group={group.topic}><summary class="topic-heading"><span class="topic-order">GRUPO {String(groupIndex + 1).padStart(2, '0')}</span><h3>{group.topic}</h3><span class="topic-count">{String(group.cards.length).padStart(2, '0')} {group.cards.length === 1 ? 'tarjeta' : 'tarjetas'}</span><span class="topic-chevron" aria-hidden="true">⌄</span></summary>
+					<div class="topic-content"><div class="activity-grid">{group.cards.map((card) => {
 						const searchIndex = `${card.title} ${card.topic} ${card.kind} ${card.intro} ${card.extended ?? ''} ${card.reflection ?? ''} ${card.learning.join(' ')} ${card.note} ${card.directUrl ?? ''} ${card.files.map((f) => `${f.title} ${f.path} ${f.role} ${f.description} ${f.learning} ${f.externalUrl ?? ''}`).join(' ')}`;
 						return <article class="activity-card" data-search={searchIndex} data-section={section} data-topic={card.topic} data-kind={card.kind} data-subjects={subjectsFor(card).join('|')} data-file-count={card.files.length || 1}>
 							<div class="activity-summary"><span class="activity-topic">{card.topic}</span><span class="kind-badge">{card.kind}</span>{subjectsFor(card).length > 0 && <div class="area-tags" aria-label="Enfoques principales">{subjectsFor(card).map((subject) => <span class="area-chip" data-area={subject}>{subjectLabel(subject)}</span>)}</div>}<h2>{card.title}</h2><div class="card-copy"><div class="card-copy-part"><span>QUÉ CONTIENE</span><p>{card.intro}</p></div><div class="card-copy-part learning-preview"><span>APRENDIZAJE CLAVE</span><p>{card.learning[0]}</p></div></div><div class="card-bottom"><span class="file-count">{card.files.length ? `${card.files.length} ${card.files.length === 1 ? 'recurso' : 'recursos'}` : 'Enlace externo'}</span><a class="detail-link" href={`${baseUrl}evidencias/${card.slug}/`}>Ver explicación y archivos <span aria-hidden="true">↗</span></a></div></div>
 						</article>;
-					})}</div>
-				</section>)}</div>
+					})}</div></div>
+				</details>)}</div>
 			</details>)}
 		</div>
 		<footer class="closing-note">PDF, presentaciones, documentos, hojas de cálculo, archivos comprimidos y texto/código cuentan con una vista previa dentro de la ficha. El archivo original permanece disponible para consulta.</footer>
@@ -78,15 +77,15 @@ const subjectLabel = (value: string) => subjectOptions.find((subject) => subject
 		const search = document.querySelector<HTMLInputElement>('#search')!;
 		const sectionSelect = document.querySelector<HTMLSelectElement>('#section-filter')!;
 		const topicSelect = document.querySelector<HTMLSelectElement>('#topic-filter')!;
-		const kindSelect = document.querySelector<HTMLSelectElement>('#kind-filter')!;
 		const subjectSelect = document.querySelector<HTMLSelectElement>('#subject-filter')!;
 		const clearButton = document.querySelector<HTMLButtonElement>('#clear-filters')!;
 		const cards = [...document.querySelectorAll<HTMLElement>('.activity-card')];
 		const sections = [...document.querySelectorAll<HTMLDetailsElement>('.library-section')];
-		const topicGroups = [...document.querySelectorAll<HTMLElement>('.topic-group')];
+		const topicGroups = [...document.querySelectorAll<HTMLDetailsElement>('.topic-group')];
 		const resultCount = document.querySelector<HTMLElement>('#result-count')!;
 		const emptyState = document.querySelector<HTMLElement>('#empty-state')!;
 		const loadedText = new Set<string>();
+		const autoOpenedGroups = new Set<HTMLDetailsElement>();
 		const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 		const initialTopics = [...topicSelect.options].slice(1).map((option) => ({ value: option.value, label: option.textContent ?? option.value }));
 		const updateTopics = () => {
@@ -102,12 +101,17 @@ const subjectLabel = (value: string) => subjectOptions.find((subject) => subject
 			cards.forEach((card) => {
 				const text = normalize(card.dataset.search ?? '');
 				const subjects = (card.dataset.subjects ?? '').split('|');
-				const matches = terms.every((term) => text.includes(term)) && (!sectionSelect.value || card.dataset.section === sectionSelect.value) && (!topicSelect.value || card.dataset.topic === topicSelect.value) && (!kindSelect.value || card.dataset.kind === kindSelect.value) && (!subjectSelect.value || subjects.includes(subjectSelect.value));
+				const matches = terms.every((term) => text.includes(term)) && (!sectionSelect.value || card.dataset.section === sectionSelect.value) && (!topicSelect.value || card.dataset.topic === topicSelect.value) && (!subjectSelect.value || subjects.includes(subjectSelect.value));
 				card.hidden = !matches;
 				if (matches) { activityCount++; fileCount += Number(card.dataset.fileCount ?? 0); }
 			});
-			topicGroups.forEach((group) => group.hidden = !group.querySelector('.activity-card:not([hidden])'));
-			const filtering = !!(terms.length || sectionSelect.value || topicSelect.value || kindSelect.value || subjectSelect.value);
+			const filtering = !!(terms.length || sectionSelect.value || topicSelect.value || subjectSelect.value);
+			topicGroups.forEach((group) => {
+				const hasMatch = !!group.querySelector('.activity-card:not([hidden])');
+				group.hidden = !hasMatch;
+				if (filtering && hasMatch && !group.open) { group.open = true; autoOpenedGroups.add(group); }
+				if (!filtering && autoOpenedGroups.has(group)) { group.open = false; autoOpenedGroups.delete(group); }
+			});
 			sections.forEach((section) => { const hasMatch = !!section.querySelector('.activity-card:not([hidden])'); section.hidden = !hasMatch; if (filtering) section.open = hasMatch; });
 			emptyState.hidden = activityCount > 0;
 			resultCount.textContent = `${activityCount} ${activityCount === 1 ? 'actividad' : 'actividades'} · ${fileCount} ${fileCount === 1 ? 'archivo' : 'archivos'}`;
@@ -123,12 +127,12 @@ const subjectLabel = (value: string) => subjectOptions.find((subject) => subject
 		document.querySelectorAll<HTMLDetailsElement>('.file-item').forEach((row) => row.addEventListener('toggle', () => { if (row.open) loadTextPreview(row); }));
 		search.addEventListener('input', applyFilters);
 		sectionSelect.addEventListener('change', () => { updateTopics(); applyFilters(); });
-		topicSelect.addEventListener('change', applyFilters); kindSelect.addEventListener('change', applyFilters); subjectSelect.addEventListener('change', applyFilters);
-		clearButton.addEventListener('click', () => { search.value = ''; sectionSelect.value = ''; kindSelect.value = ''; subjectSelect.value = ''; updateTopics(); topicSelect.value = ''; applyFilters(); search.focus(); });
+		topicSelect.addEventListener('change', applyFilters); subjectSelect.addEventListener('change', applyFilters);
+		clearButton.addEventListener('click', () => { search.value = ''; sectionSelect.value = ''; subjectSelect.value = ''; updateTopics(); topicSelect.value = ''; applyFilters(); search.focus(); });
 	document.querySelectorAll<HTMLAnchorElement>('.section-nav a').forEach((link) => link.addEventListener('click', (event) => {
 		event.preventDefault();
 		const target = document.getElementById(link.getAttribute('href')!.slice(1)) as HTMLDetailsElement | null;
-		if (target) { target.open = true; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.replaceState(null, '', link.hash); }
+		if (target) { target.open = true; const firstGroup = target.querySelector<HTMLDetailsElement>('.topic-group'); if (firstGroup) firstGroup.open = true; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.replaceState(null, '', link.hash); }
 	}));
 	</script>
 </BaseLayout>
@@ -185,7 +189,7 @@ const subjectLabel = (value: string) => subjectOptions.find((subject) => subject
 	.library-section .activity-card{background:linear-gradient(150deg,color-mix(in srgb,var(--section-accent) 7%,var(--gray-999)),var(--gray-999) 70%)}
 	.library-section .area-chip{box-shadow:0 2px 10px color-mix(in srgb,var(--area-accent) 8%,transparent)}
 	@media(max-width:34em){.activity-grid{gap:.55rem;padding:.45rem}.activity-summary{padding:.82rem}.topic-groups{padding-inline:.5rem}}
-	@media(min-width:65em){.filters{grid-template-columns:minmax(13rem,1.8fr) repeat(4,minmax(7rem,1fr)) auto}}
+	@media(min-width:65em){.filters{grid-template-columns:minmax(14rem,2fr) repeat(3,minmax(8rem,1fr)) auto}}
 	@media(max-width:34em){.topic-heading{padding:.6rem}.topic-heading h3{font-size:.92rem}}
 	@media(max-width:34em){.area-tags{gap:.28rem}.area-chip{font-size:.6rem}}
 	/* Reduce el efecto de cajas anidadas: los temas actúan como separadores y cada evidencia conserva su propio espacio. */
@@ -217,6 +221,30 @@ const subjectLabel = (value: string) => subjectOptions.find((subject) => subject
 	.area-tags{gap:.27rem}
 	.area-chip{min-height:1.3rem;padding:.16rem .42rem}
 	@media(max-width:34em){.activity-grid{gap:.55rem;padding-inline:.2rem}.activity-summary{padding:.7rem}.card-copy{gap:.32rem}}
+	/* Cada tema del catálogo puede abrirse y cerrarse como un nivel propio. */
+	.topic-group[hidden]{display:none}
+	.topic-heading{grid-template-columns:minmax(0,1fr) auto auto;cursor:pointer;list-style:none;user-select:none}
+	.topic-heading::-webkit-details-marker{display:none}
+	.topic-heading:focus-visible{outline:2px solid var(--section-accent);outline-offset:3px}
+	.topic-heading h3{min-width:0;overflow-wrap:anywhere}
+	.topic-chevron{grid-column:3;grid-row:2;display:grid;place-items:center;width:1.65rem;height:1.65rem;border-radius:50%;color:var(--section-accent);font-size:1rem;transition:transform .2s ease,background .2s ease}
+	.topic-group[open]>.topic-heading{background:linear-gradient(90deg,color-mix(in srgb,var(--section-accent) 9%,transparent),transparent 75%)}
+	.topic-group[open]>.topic-heading h3{color:var(--section-accent)}
+	.topic-group[open]>.topic-heading .topic-chevron{transform:rotate(180deg);background:color-mix(in srgb,var(--section-accent) 10%,transparent)}
+	.topic-content{animation:topic-reveal .2s ease both}
+	@keyframes topic-reveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+	@media(prefers-reduced-motion:reduce){.topic-chevron{transition:none}.topic-content{animation:none}}
+	/* Franja temática: número, título, cantidad y control se distinguen de un vistazo. */
+	.topic-heading{grid-template-columns:auto minmax(0,1fr) auto auto;gap:.65rem 1rem;align-items:center;margin:.65rem 0 0;padding:.75rem .9rem;border-left:3px solid color-mix(in srgb,var(--section-accent) 72%,transparent);border-bottom:1px solid color-mix(in srgb,var(--section-accent) 22%,var(--gray-800));background:linear-gradient(100deg,color-mix(in srgb,var(--section-accent) 8%,transparent),transparent 78%);transition:background .2s,border-color .2s}
+	.topic-order{grid-column:1;grid-row:1;justify-self:start;padding:.3rem .48rem;border-radius:99px;background:color-mix(in srgb,var(--section-accent) 14%,transparent);color:var(--section-accent);font-size:.57rem;font-weight:850;letter-spacing:.08em;white-space:nowrap}
+	.topic-heading h3{grid-column:2;grid-row:1;color:var(--gray-200);font-size:1rem;font-weight:750;line-height:1.35;transition:color .2s}
+	.topic-count{grid-column:3;grid-row:1;justify-self:end;padding:0!important;color:var(--gray-400)!important;font-size:.68rem!important;font-weight:650;white-space:nowrap}
+	.topic-chevron{grid-column:4;grid-row:1;width:1.8rem;height:1.8rem;background:color-mix(in srgb,var(--section-accent) 9%,transparent);font-size:1.05rem}
+	.topic-heading:hover{border-left-color:var(--section-accent);background:linear-gradient(100deg,color-mix(in srgb,var(--section-accent) 13%,transparent),transparent 85%)}
+	.topic-heading:hover h3,.topic-group[open]>.topic-heading h3{color:var(--section-accent)}
+	.topic-group[open]>.topic-heading{border-bottom-color:color-mix(in srgb,var(--section-accent) 42%,var(--gray-800));background:linear-gradient(100deg,color-mix(in srgb,var(--section-accent) 13%,transparent),transparent 88%)}
+	.topic-group[open]>.topic-heading .topic-count{color:var(--section-accent)!important}
+	@media(max-width:38em){.topic-heading{grid-template-columns:auto minmax(0,1fr) auto;gap:.4rem .6rem;padding:.7rem .65rem}.topic-order{grid-column:1;grid-row:1}.topic-heading h3{grid-column:2;grid-row:1;font-size:.94rem}.topic-count{grid-column:2;grid-row:2;justify-self:start;font-size:.63rem!important}.topic-chevron{grid-column:3;grid-row:1;grid-row:1/3;align-self:center}}
 
 </style>
 
